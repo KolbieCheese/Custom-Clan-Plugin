@@ -4,7 +4,14 @@ plugins {
 }
 
 group = 'io.github.maste'
-version = '1.0.0-SNAPSHOT'
+def baseVersion = providers.gradleProperty('pluginBaseVersion').get()
+def pluginVersion = providers.gradleProperty('pluginVersion')
+    .orElse(providers.environmentVariable('PLUGIN_VERSION'))
+    .orElse(providers.environmentVariable('GITHUB_RUN_NUMBER').map { "${baseVersion}-build.${it}" })
+    .orElse("${baseVersion}-SNAPSHOT")
+    .get()
+
+version = pluginVersion
 
 repositories {
     mavenCentral()
@@ -37,6 +44,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
+    inputs.property('pluginVersion', project.version)
     filesMatching(['paper-plugin.yml', 'plugin.yml']) {
         expand(version: project.version)
     }

@@ -95,3 +95,10 @@ On Windows:
 ```
 
 The shadow jar is produced without a classifier so the SQLite JDBC dependency is bundled into the final plugin jar.
+
+## Versioning And Releases
+
+- Local builds default to `pluginBaseVersion-SNAPSHOT`.
+- GitHub Actions builds automatically use `pluginBaseVersion-build.<run number>`.
+- Every push to `main` publishes a GitHub release with the shaded plugin jar attached.
+- To start a new release line, update `pluginBaseVersion` in `gradle.properties`.
