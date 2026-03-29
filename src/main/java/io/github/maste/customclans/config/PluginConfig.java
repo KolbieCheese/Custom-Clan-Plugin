@@ -34,6 +34,7 @@ public final class PluginConfig {
     private final int maxClanSize;
     private final String publicChatFormat;
     private final String clanChatFormat;
+    private final boolean clanChatEnabled;
     private final boolean clanChatToggleEnabled;
     private final boolean debug;
 
@@ -47,6 +48,7 @@ public final class PluginConfig {
             int maxClanSize,
             String publicChatFormat,
             String clanChatFormat,
+            boolean clanChatEnabled,
             boolean clanChatToggleEnabled,
             boolean debug
     ) {
@@ -59,6 +61,7 @@ public final class PluginConfig {
         this.maxClanSize = maxClanSize;
         this.publicChatFormat = publicChatFormat;
         this.clanChatFormat = clanChatFormat;
+        this.clanChatEnabled = clanChatEnabled;
         this.clanChatToggleEnabled = clanChatToggleEnabled;
         this.debug = debug;
     }
@@ -114,6 +117,7 @@ public final class PluginConfig {
                 maxClanSize,
                 publicChatFormat,
                 clanChatFormat,
+                config.getBoolean("clan-chat-enabled", true),
                 config.getBoolean("clan-chat-toggle-enabled", true),
                 config.getBoolean("debug", false)
         );
@@ -149,6 +153,10 @@ public final class PluginConfig {
 
     public String clanChatFormat() {
         return clanChatFormat;
+    }
+
+    public boolean clanChatEnabled() {
+        return clanChatEnabled;
     }
 
     public boolean clanChatToggleEnabled() {

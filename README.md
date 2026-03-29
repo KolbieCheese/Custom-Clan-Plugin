@@ -50,7 +50,7 @@ President-only actions also validate that the player is the actual `PRESIDENT` o
 - invite expiration time
 - max clan size
 - public and clan chat formatting
-- clan chat toggle availability
+- clan chat availability and toggle availability
 - debug logging
 
 `messages.yml` contains all player-facing strings, including help text, invite flow, and management messages.
@@ -65,7 +65,7 @@ President-only actions also validate that the player is the actual `PRESIDENT` o
 
 Public chat uses `AsyncChatEvent` with a custom renderer. The plugin creates a safe Adventure `Component` for the clan tag and injects it into the configured MiniMessage template through component placeholders. This keeps clan colors limited to the tag and prevents tag values from injecting MiniMessage formatting into the rest of the line.
 
-Clan chat supports both `/clan chat <message>` and `/clan chat toggle`. Toggle mode is session-only and is stored in memory, so it clears on logout or restart. When enabled, the plugin intercepts `AsyncChatEvent`, cancels the public broadcast, and forwards the message only to online clan members.
+Clan chat supports both `/clan chat <message>` and `/clan chat toggle`. The `clan-chat-enabled` config option disables clan chat completely, while `clan-chat-toggle-enabled` only controls whether players can keep clan chat mode turned on for normal chat. Toggle mode is session-only and is stored in memory, so it clears on logout or restart. When enabled, the plugin intercepts `AsyncChatEvent`, cancels the public broadcast, and forwards the message only to online clan members.
 
 ## Architecture
 

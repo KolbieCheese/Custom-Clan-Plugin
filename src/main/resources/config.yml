@@ -15,5 +15,6 @@ invite-expiration-seconds: 300
 max-clan-size: 20
 public-chat-format: "<tag_prefix><white><player_name></white><gray>: </gray><message>"
 clan-chat-format: "<dark_gray>[Clan]</dark_gray> <tag_prefix><white><player_name></white><gray>: </gray><message>"
+clan-chat-enabled: true
 clan-chat-toggle-enabled: true
 debug: false

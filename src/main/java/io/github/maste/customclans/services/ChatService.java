@@ -80,6 +80,9 @@ public final class ChatService {
     }
 
     public CompletableFuture<ActionResult<Boolean>> toggleClanChat(Player player) {
+        if (!pluginConfig.clanChatEnabled()) {
+            return CompletableFuture.completedFuture(ActionResult.failure("chat.unavailable"));
+        }
         if (!pluginConfig.clanChatToggleEnabled()) {
             return CompletableFuture.completedFuture(ActionResult.failure("chat.toggle-unavailable"));
         }
@@ -106,6 +109,9 @@ public final class ChatService {
     }
 
     public CompletableFuture<ActionResult<Void>> sendClanChat(Player sender, String rawMessage) {
+        if (!pluginConfig.clanChatEnabled()) {
+            return CompletableFuture.completedFuture(ActionResult.failure("chat.unavailable"));
+        }
         if (rawMessage == null || rawMessage.isBlank()) {
             return CompletableFuture.completedFuture(ActionResult.failure("chat.no-message"));
         }
@@ -113,6 +119,9 @@ public final class ChatService {
     }
 
     public CompletableFuture<ActionResult<Void>> sendClanChat(Player sender, Component message) {
+        if (!pluginConfig.clanChatEnabled()) {
+            return CompletableFuture.completedFuture(ActionResult.failure("chat.unavailable"));
+        }
         return getOrLoadSnapshot(sender.getUniqueId()).thenCompose(optionalSnapshot -> {
             if (optionalSnapshot.isEmpty()) {
                 return CompletableFuture.completedFuture(ActionResult.failure("common.no-clan"));
@@ -128,6 +137,10 @@ public final class ChatService {
 
     public boolean shouldRouteToClanChat(Player player) {
         UUID playerUuid = player.getUniqueId();
+        if (!pluginConfig.clanChatEnabled()) {
+            clanChatToggles.remove(playerUuid);
+            return false;
+        }
         if (!pluginConfig.clanChatToggleEnabled() || !clanChatToggles.contains(playerUuid)) {
             return false;
         }

@@ -83,6 +83,7 @@ members:
 
 chat:
   no-message: "<prefix><red>You must provide a clan chat message.</red>"
+  unavailable: "<prefix><red>Clan chat is disabled in the config.</red>"
   toggle-unavailable: "<prefix><red>Clan chat toggle is disabled in the config.</red>"
   toggle-on: "<prefix><green>Clan chat toggle enabled.</green>"
   toggle-off: "<prefix><yellow>Clan chat toggle disabled.</yellow>"
