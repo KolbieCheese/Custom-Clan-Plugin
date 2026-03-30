@@ -52,11 +52,11 @@ public final class ClanService {
                     Map.of("max", String.valueOf(pluginConfig.maxClanNameLength()))
             ));
         }
-        if (!ValidationUtil.isValidClanName(trimmedName, pluginConfig.maxClanNameLength())) {
-            return CompletableFuture.completedFuture(ActionResult.failure("validation.invalid-name"));
-        }
         if (nameModerationPolicy.isRestrictedFor(player, trimmedName)) {
             return CompletableFuture.completedFuture(ActionResult.failure("validation.restricted-name"));
+        }
+        if (!ValidationUtil.isValidClanName(trimmedName, pluginConfig.maxClanNameLength())) {
+            return CompletableFuture.completedFuture(ActionResult.failure("validation.invalid-name"));
         }
 
         String derivedTag = ValidationUtil.deriveDefaultTag(trimmedName, pluginConfig.maxClanTagLength());
@@ -134,11 +134,11 @@ public final class ClanService {
                     Map.of("max", String.valueOf(pluginConfig.maxClanNameLength()))
             ));
         }
-        if (!ValidationUtil.isValidClanName(trimmedName, pluginConfig.maxClanNameLength())) {
-            return CompletableFuture.completedFuture(ActionResult.failure("validation.invalid-name"));
-        }
         if (nameModerationPolicy.isRestrictedFor(player, trimmedName)) {
             return CompletableFuture.completedFuture(ActionResult.failure("validation.restricted-name"));
+        }
+        if (!ValidationUtil.isValidClanName(trimmedName, pluginConfig.maxClanNameLength())) {
+            return CompletableFuture.completedFuture(ActionResult.failure("validation.invalid-name"));
         }
 
         return requirePresident(player.getUniqueId()).thenCompose(snapshotResult -> {
