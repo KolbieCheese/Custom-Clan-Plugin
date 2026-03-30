@@ -105,8 +105,8 @@ public final class CustomClansPlugin extends JavaPlugin {
         List<ClanSubcommand> subcommands = List.of(
                 new HelpSubcommand(this, messageManager),
                 new CreateSubcommand(this, messageManager, clanService),
-                new AcceptSubcommand(this, messageManager, inviteService),
-                new DenySubcommand(this, messageManager, inviteService),
+                new AcceptSubcommand(this, messageManager, inviteService, clanService),
+                new DenySubcommand(this, messageManager, inviteService, clanService),
                 new LeaveSubcommand(this, messageManager, clanService),
                 new GetSubcommand(this, messageManager, clanService, pluginConfig),
                 new ChatSubcommand(this, messageManager, chatService),

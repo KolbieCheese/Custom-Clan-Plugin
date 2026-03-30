@@ -208,6 +208,25 @@ public final class SQLiteClanRepository implements ClanRepository {
     }
 
     @Override
+    public CompletableFuture<List<String>> listClanNames() {
+        return database.supplyAsync(() -> {
+            try (var connection = database.openConnection();
+                 PreparedStatement statement = connection.prepareStatement("""
+                         SELECT name
+                         FROM clans
+                         ORDER BY LOWER(name) ASC
+                         """);
+                 ResultSet resultSet = statement.executeQuery()) {
+                java.util.ArrayList<String> clanNames = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    clanNames.add(resultSet.getString("name"));
+                }
+                return List.copyOf(clanNames);
+            }
+        });
+    }
+
+    @Override
     public CompletableFuture<Boolean> transferLeadership(long clanId, UUID currentPresidentUuid, UUID newPresidentUuid) {
         return database.transactionAsync(connection -> {
             try (PreparedStatement clanCheck = connection.prepareStatement("SELECT president_uuid FROM clans WHERE id = ?")) {

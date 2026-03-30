@@ -114,14 +114,14 @@ class ClanCommandTest {
 
     @Test
     void acceptRequiresClanName() {
-        new AcceptSubcommand(plugin, messages, inviteService).execute(sender, new String[0]);
+        new AcceptSubcommand(plugin, messages, inviteService, clanService).execute(sender, new String[0]);
 
         verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
     }
 
     @Test
     void denyRequiresClanName() {
-        new DenySubcommand(plugin, messages, inviteService).execute(sender, new String[0]);
+        new DenySubcommand(plugin, messages, inviteService, clanService).execute(sender, new String[0]);
 
         verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
     }

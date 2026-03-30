@@ -57,8 +57,15 @@ public final class GetSubcommand extends AbstractClanSubcommand {
 
     @Override
     public java.util.List<String> tabComplete(CommandSender sender, String[] args) {
-        if (args.length < 2) {
-            return java.util.List.of();
+        if (args.length == 1) {
+            return clanService.suggestClanNames(args[0]);
+        }
+
+        if (args.length == 2) {
+            String token = args[1].toLowerCase(java.util.Locale.ROOT);
+            return java.util.List.of("info", "members").stream()
+                    .filter(option -> option.startsWith(token))
+                    .toList();
         }
 
         String token = args[args.length - 1].toLowerCase(java.util.Locale.ROOT);

@@ -34,6 +34,8 @@ public interface ClanRepository {
 
     CompletableFuture<List<ClanListEntry>> listActiveClans();
 
+    CompletableFuture<List<String>> listClanNames();
+
     CompletableFuture<Boolean> transferLeadership(long clanId, UUID currentPresidentUuid, UUID newPresidentUuid);
 
     CompletableFuture<Void> disbandClan(long clanId);

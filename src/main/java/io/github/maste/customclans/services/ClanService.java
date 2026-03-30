@@ -263,6 +263,17 @@ public final class ClanService {
         return clanRepository.listActiveClans().thenApply(clans -> ActionResult.success("", clans));
     }
 
+    public List<String> suggestClanNames(String token) {
+        String normalizedToken = token == null ? "" : token.toLowerCase(java.util.Locale.ROOT);
+        try {
+            return clanRepository.listClanNames().join().stream()
+                    .filter(name -> name.toLowerCase(java.util.Locale.ROOT).startsWith(normalizedToken))
+                    .toList();
+        } catch (RuntimeException exception) {
+            return List.of();
+        }
+    }
+
     public CompletableFuture<ActionResult<ClanMember>> kickMember(Player player, String targetName) {
         return requirePresident(player.getUniqueId()).thenCompose(snapshotResult -> {
             if (!snapshotResult.success()) {
