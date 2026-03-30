@@ -203,11 +203,11 @@ class ClanServiceTest {
         Player player = mockPlayer("Alice");
         clanService.createClan(player, "Crimson Knights").join();
 
-        ActionResult<Void> result = clanService.updateColor(player, "#ffaa00").join();
+        ActionResult<Void> result = clanService.updateColor(player, "#00aa00").join();
 
         assertTrue(result.success());
         assertEquals("color.success", result.messageKey());
-        assertEquals("#FFAA00", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
+        assertEquals("#00AA00", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
     }
 
     @Test
@@ -219,6 +219,40 @@ class ClanServiceTest {
 
         assertFalse(result.success());
         assertEquals("validation.invalid-color", result.messageKey());
+        assertEquals("white", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
+    }
+
+    @Test
+    void goldColorIsRestrictedWithoutBypassPermission() {
+        Player player = mockPlayer("Alice");
+        clanService.createClan(player, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.updateColor(player, "gold").join();
+
+        assertFalse(result.success());
+        assertEquals("validation.restricted-color", result.messageKey());
+    }
+
+    @Test
+    void goldHexColorIsRestrictedWithoutBypassPermission() {
+        Player player = mockPlayer("Alice");
+        clanService.createClan(player, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.updateColor(player, "#ffaa00").join();
+
+        assertFalse(result.success());
+        assertEquals("validation.restricted-color", result.messageKey());
+    }
+
+    @Test
+    void bypassPermissionAllowsRestrictedGoldColor() {
+        Player player = mockPlayer("Alice");
+        when(player.hasPermission("clans.admin.bypass.restricted-names")).thenReturn(true);
+        clanService.createClan(player, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.updateColor(player, "gold").join();
+
+        assertTrue(result.success());
         assertEquals("gold", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
     }
 
@@ -373,7 +407,7 @@ class ClanServiceTest {
             org.bukkit.configuration.file.YamlConfiguration yaml = new org.bukkit.configuration.file.YamlConfiguration();
             yaml.set("max-clan-name-length", 24);
             yaml.set("max-clan-tag-length", 6);
-            yaml.set("default-clan-tag-color", "gold");
+            yaml.set("default-clan-tag-color", "white");
             yaml.set("invite-expiration-seconds", 300);
             yaml.set("max-clan-size", 20);
             yaml.set("public-chat-format", "<tag_prefix><white><player_name></white><gray>: </gray><message>");

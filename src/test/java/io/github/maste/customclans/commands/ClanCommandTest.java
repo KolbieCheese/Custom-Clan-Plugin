@@ -21,10 +21,12 @@ import io.github.maste.customclans.commands.subcommands.InviteSubcommand;
 import io.github.maste.customclans.commands.subcommands.KickSubcommand;
 import io.github.maste.customclans.commands.subcommands.LeaveSubcommand;
 import io.github.maste.customclans.commands.subcommands.RenameSubcommand;
+import io.github.maste.customclans.commands.subcommands.ReloadSubcommand;
 import io.github.maste.customclans.commands.subcommands.TagSubcommand;
 import io.github.maste.customclans.commands.subcommands.TransferSubcommand;
 import io.github.maste.customclans.config.MessageManager;
 import io.github.maste.customclans.config.PluginConfig;
+import io.github.maste.customclans.plugin.CustomClansPlugin;
 import io.github.maste.customclans.util.ActionResult;
 import java.util.concurrent.CompletableFuture;
 import java.util.List;
@@ -80,6 +82,25 @@ class ClanCommandTest {
         new DisbandSubcommand(plugin, messages, clanService).execute(sender, new String[]{"extra"});
 
         verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void reloadRejectsExtraArguments() {
+        CustomClansPlugin customClansPlugin = mock(CustomClansPlugin.class);
+        new ReloadSubcommand(customClansPlugin, messages).execute(sender, new String[]{"extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void reloadRunsPluginRefreshFlow() {
+        CustomClansPlugin customClansPlugin = mock(CustomClansPlugin.class);
+        doNothing().when(customClansPlugin).reloadPluginState();
+
+        new ReloadSubcommand(customClansPlugin, messages).execute(sender, new String[0]);
+
+        verify(customClansPlugin).reloadPluginState();
+        verify(messages).send(sender, "reload.success");
     }
 
     @Test

@@ -205,6 +205,13 @@ public final class ClanService {
                     Map.of("color", colorName)
             ));
         }
+        if (pluginConfig.isRestrictedGoldColor(normalizedColor)
+                && !player.hasPermission(pluginConfig.nameModerationConfig().bypassPermission())) {
+            return CompletableFuture.completedFuture(ActionResult.failure(
+                    "validation.restricted-color",
+                    Map.of("color", pluginConfig.formatColorDisplayName(normalizedColor))
+            ));
+        }
 
         return requirePresident(player.getUniqueId()).thenCompose(snapshotResult -> {
             if (!snapshotResult.success()) {

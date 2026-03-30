@@ -32,6 +32,10 @@ def pluginVersion = providers.gradleProperty('pluginVersion')
 
 version = pluginVersion
 
+base {
+    archivesName.set('SimpleClans')
+}
+
 repositories {
     mavenCentral()
     maven {

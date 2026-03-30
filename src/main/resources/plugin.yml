@@ -1,16 +1,16 @@
-name: CustomClans
+name: SimpleClans
 version: ${version}
 main: io.github.maste.customclans.plugin.CustomClansPlugin
 api-version: '1.21.11'
 load: POSTWORLD
 authors:
   - maste
-description: Lightweight command-based clans plugin for Paper.
+description: Simple Clans is a lightweight command-based clans plugin for Paper.
 softdepend:
   - DiscordSRV
 commands:
   clan:
-    description: Root command for the CustomClans plugin.
+    description: Root command for the Simple Clans plugin.
     usage: /clan help
 permissions:
   clans.use:

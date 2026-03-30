@@ -1,6 +1,6 @@
-# CustomClans
+# Simple Clans
 
-CustomClans is a lightweight, command-only Minecraft clans plugin for Paper `1.21.11+`. It is designed for Java and Bedrock-friendly command usage with persistent SQLite storage, public clan lookup, public chat tags, private clan chat, and a single-leader MVP role model.
+Simple Clans is a lightweight, command-only Minecraft clans plugin for Paper `1.21.11+`. It is designed for Java and Bedrock-friendly command usage with persistent SQLite storage, public clan lookup, public chat tags, private clan chat, and a single-leader MVP role model.
 
 ## Features
 
@@ -84,7 +84,7 @@ CustomClans is a lightweight, command-only Minecraft clans plugin for Paper `1.2
 
 ## Storage
 
-- Default database: `plugins/CustomClans/clans.db`
+- Default database: `plugins/SimpleClans/clans.db`
 - Tables and indexes are created automatically on startup.
 - Clan names are stored with a normalized form for case-insensitive uniqueness and lookup.
 - SQLite is used by default through repository interfaces so the persistence layer can be swapped later.

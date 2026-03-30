@@ -14,6 +14,7 @@ import io.github.maste.customclans.commands.subcommands.InviteSubcommand;
 import io.github.maste.customclans.commands.subcommands.KickSubcommand;
 import io.github.maste.customclans.commands.subcommands.LeaveSubcommand;
 import io.github.maste.customclans.commands.subcommands.RenameSubcommand;
+import io.github.maste.customclans.commands.subcommands.ReloadSubcommand;
 import io.github.maste.customclans.commands.subcommands.TagSubcommand;
 import io.github.maste.customclans.commands.subcommands.TransferSubcommand;
 import io.github.maste.customclans.config.MessageManager;
@@ -37,6 +38,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -68,13 +70,7 @@ public final class CustomClansPlugin extends JavaPlugin {
         ClanRepository clanRepository = new SQLiteClanRepository(database);
         ClanMemberRepository clanMemberRepository = new SQLiteClanMemberRepository(database);
         ClanInviteRepository clanInviteRepository = new SQLiteClanInviteRepository(database);
-        ClanChatRelay clanChatRelay = pluginConfig.discordSrvClanChatRelayEnabled()
-                ? new DiscordSrvClanChatRelay(this, pluginConfig)
-                : new NoopClanChatRelay();
-
-        this.chatService = new ChatService(this, pluginConfig, clanMemberRepository, clanChatRelay, messageManager.miniMessage());
-        this.clanService = new ClanService(pluginConfig, clanRepository, clanMemberRepository, chatService);
-        this.inviteService = new InviteService(pluginConfig, clanRepository, clanMemberRepository, clanInviteRepository, chatService);
+        initializeRuntimeServices(clanRepository, clanMemberRepository, clanInviteRepository);
 
         registerCommand();
         registerListeners();
@@ -109,7 +105,8 @@ public final class CustomClansPlugin extends JavaPlugin {
                 new ColorSubcommand(this, messageManager, clanService, pluginConfig),
                 new KickSubcommand(this, messageManager, clanService, chatService),
                 new TransferSubcommand(this, messageManager, clanService, chatService),
-                new DisbandSubcommand(this, messageManager, clanService)
+                new DisbandSubcommand(this, messageManager, clanService),
+                new ReloadSubcommand(this, messageManager)
         );
 
         ClanCommand executor = new ClanCommand(messageManager, clanService, subcommands);
@@ -142,5 +139,37 @@ public final class CustomClansPlugin extends JavaPlugin {
                     getLogger().log(Level.WARNING, "Failed to clean expired clan invites", throwable);
                     return 0;
                 }), 20L * 60L, 20L * 60L);
+    }
+
+    public void reloadPluginState() {
+        reloadConfig();
+        messageManager.reload();
+        pluginConfig = PluginConfig.load(this);
+
+        ClanRepository clanRepository = new SQLiteClanRepository(database);
+        ClanMemberRepository clanMemberRepository = new SQLiteClanMemberRepository(database);
+        ClanInviteRepository clanInviteRepository = new SQLiteClanInviteRepository(database);
+        initializeRuntimeServices(clanRepository, clanMemberRepository, clanInviteRepository);
+
+        getServer().getScheduler().cancelTasks(this);
+        HandlerList.unregisterAll(this);
+        registerCommand();
+        registerListeners();
+        warmOnlinePlayerCaches();
+        scheduleInviteCleanup();
+    }
+
+    private void initializeRuntimeServices(
+            ClanRepository clanRepository,
+            ClanMemberRepository clanMemberRepository,
+            ClanInviteRepository clanInviteRepository
+    ) {
+        ClanChatRelay clanChatRelay = pluginConfig.discordSrvClanChatRelayEnabled()
+                ? new DiscordSrvClanChatRelay(this, pluginConfig)
+                : new NoopClanChatRelay();
+
+        chatService = new ChatService(this, pluginConfig, clanMemberRepository, clanChatRelay, messageManager.miniMessage());
+        clanService = new ClanService(pluginConfig, clanRepository, clanMemberRepository, chatService);
+        inviteService = new InviteService(pluginConfig, clanRepository, clanMemberRepository, clanInviteRepository, chatService);
     }
 }
