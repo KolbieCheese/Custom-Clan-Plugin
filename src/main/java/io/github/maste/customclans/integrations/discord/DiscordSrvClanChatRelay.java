@@ -42,7 +42,7 @@ public final class DiscordSrvClanChatRelay implements ClanChatRelay {
             return;
         }
 
-        String message = formatMessage(snapshot.clanName(), sender.getName(), rawMessage);
+        String message = formatMessage(snapshot.tag(), sender.getName(), rawMessage);
 
         try {
             if (invokeProcessChatMessage(discordSrvPlugin, sender, message, gameChannelName)) {
@@ -58,9 +58,9 @@ public final class DiscordSrvClanChatRelay implements ClanChatRelay {
         }
     }
 
-    private String formatMessage(String clanName, String userName, String message) {
+    private String formatMessage(String clanTag, String userName, String message) {
         return relayFormat
-                .replace("{clan}", clanName)
+                .replace("{clan}", clanTag)
                 .replace("{user}", userName)
                 .replace("{message}", message);
     }
