@@ -35,7 +35,19 @@ jobs:
         shell: bash
         run: |
           BASE_VERSION="$(grep '^pluginBaseVersion=' gradle.properties | cut -d= -f2)"
-          echo "plugin_version=${BASE_VERSION}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+          if ! [[ "$MAJOR" =~ ^[0-9]+$ && "$MINOR" =~ ^[0-9]+$ && "$PATCH" =~ ^[0-9]+$ ]]; then
+            echo "Invalid pluginBaseVersion '$BASE_VERSION'. Expected numeric major.minor.patch." >&2
+            exit 1
+          fi
+
+          PATCH=$((PATCH + GITHUB_RUN_NUMBER))
+          MINOR=$((MINOR + PATCH / 10))
+          PATCH=$((PATCH % 10))
+          MAJOR=$((MAJOR + MINOR / 10))
+          MINOR=$((MINOR % 10))
+
+          echo "plugin_version=${MAJOR}.${MINOR}.${PATCH}" >> "$GITHUB_OUTPUT"
 
       - name: Build plugin
         run: ./gradlew build -PpluginVersion=${{ steps.version.outputs.plugin_version }}
