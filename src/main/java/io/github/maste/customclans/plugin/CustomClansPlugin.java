@@ -195,14 +195,14 @@ public final class CustomClansPlugin extends JavaPlugin {
         }
 
         Path currentConfigPath = currentDataFolder.resolve("config.yml");
-        boolean firstSimpleClansBoot = !Files.exists(currentConfigPath);
+        boolean firstLightweightClansBoot = !Files.exists(currentConfigPath);
         int currentSchemaVersion = readConfigSchemaVersion(currentConfigPath);
         int legacySchemaVersion = readConfigSchemaVersion(legacyDataFolder.resolve("config.yml"));
         boolean requiresSchemaMigration = legacySchemaVersion > 0
                 && currentSchemaVersion > 0
                 && legacySchemaVersion < currentSchemaVersion;
 
-        if (!firstSimpleClansBoot && !requiresSchemaMigration) {
+        if (!firstLightweightClansBoot && !requiresSchemaMigration) {
             return;
         }
 
@@ -220,7 +220,7 @@ public final class CustomClansPlugin extends JavaPlugin {
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             }
             deleteDirectoryRecursively(legacyDataFolder);
-            getLogger().info("Migrated legacy CustomClans data folder into SimpleClans data folder.");
+            getLogger().info("Migrated legacy CustomClans data folder into LightweightClans data folder.");
         } catch (IOException ioException) {
             getLogger().log(Level.WARNING, "Failed to migrate legacy CustomClans data folder", ioException);
         }

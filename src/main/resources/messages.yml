@@ -48,7 +48,7 @@ validation:
 
 help:
   lines:
-    - "<gold><bold>Simple Clans Commands</bold></gold>"
+    - "<gold><bold>Lightweight Clans Commands</bold></gold>"
     - "<yellow>/clan help</yellow><gray> - Show this help list.</gray>"
     - "<yellow>/clan create <clan name></yellow><gray> - Create a new clan and become its President.</gray>"
     - "<yellow>/clan invite <player></yellow><gray> - Invite an online player to your clan (any clan member).</gray>"
@@ -143,4 +143,4 @@ disband:
   success-target: "<prefix><red><clan> was disbanded.</red>"
 
 reload:
-  success: "<prefix><green>Simple Clans configuration reloaded successfully.</green>"
+  success: "<prefix><green>Lightweight Clans configuration reloaded successfully.</green>"

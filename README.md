@@ -1,6 +1,6 @@
-# Simple Clans
+# Lightweight Clans
 
-Simple Clans is a lightweight, command-only Minecraft clans plugin for Paper `1.21.11+`. It is designed for Java and Bedrock-friendly command usage with persistent SQLite storage, public clan lookup, public chat tags, private clan chat, and a single-leader MVP role model.
+Lightweight Clans is a lightweight, command-only Minecraft clans plugin for Paper `1.21.11+`. It is designed for Java and Bedrock-friendly command usage with persistent SQLite storage, public clan lookup, public chat tags, private clan chat, and a single-leader MVP role model.
 
 ## Features
 
@@ -85,12 +85,12 @@ Simple Clans is a lightweight, command-only Minecraft clans plugin for Paper `1.
 
 ## Storage
 
-- Default database: `plugins/SimpleClans/clans.db`
+- Default database: `plugins/LightweightClans/clans.db`
 - Tables and indexes are created automatically on startup.
 - Clan names are stored with a normalized form for case-insensitive uniqueness and lookup.
 - SQLite is used by default through repository interfaces so the persistence layer can be swapped later.
 - Existing databases already using the current schema do not need a new migration for this polish pass.
-- On first boot after renaming from `CustomClans` to `SimpleClans`, the plugin migrates `config.yml`, `messages.yml`, and `clans.db` from `plugins/CustomClans` into `plugins/SimpleClans` and removes the old folder after a successful copy.
+- On first boot after renaming from `CustomClans` to `LightweightClans`, the plugin migrates `config.yml`, `messages.yml`, and `clans.db` from `plugins/CustomClans` into `plugins/LightweightClans` and removes the old folder after a successful copy.
 
 ## Chat Formatting
 

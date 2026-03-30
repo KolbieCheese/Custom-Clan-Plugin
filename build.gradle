@@ -33,7 +33,7 @@ def pluginVersion = providers.gradleProperty('pluginVersion')
 version = pluginVersion
 
 base {
-    archivesName.set('SimpleClans')
+    archivesName.set('LightweightClans')
 }
 
 repositories {
