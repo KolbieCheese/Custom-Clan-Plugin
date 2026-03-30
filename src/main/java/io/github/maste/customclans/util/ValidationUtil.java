@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public final class ValidationUtil {
 
-    private static final Pattern CLAN_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9 _-]+$");
+    private static final Pattern CLAN_NAME_PATTERN = Pattern.compile("^[A-Za-z0-9 _*\\-]+$");
     private static final Pattern CLAN_TAG_PATTERN = Pattern.compile("^[A-Za-z0-9]+$");
     private static final Pattern WORD_PATTERN = Pattern.compile("[A-Za-z0-9]+");
     private static final Pattern ALPHANUMERIC_PATTERN = Pattern.compile("[A-Za-z0-9]");
@@ -113,11 +113,12 @@ public final class ValidationUtil {
     private static char mapObfuscationCharacter(char character) {
         return switch (character) {
             case '0' -> 'o';
-            case '1', '!' -> 'i';
+            case '1' -> 'i';
             case '3' -> 'e';
             case '4', '@' -> 'a';
             case '5', '$' -> 's';
             case '7' -> 't';
+            case '*' -> 'u';
             default -> character;
         };
     }
