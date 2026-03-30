@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import io.github.maste.customclans.config.PluginConfig;
 import io.github.maste.customclans.models.Clan;
 import io.github.maste.customclans.models.ClanRole;
+import io.github.maste.customclans.services.InviteService;
 import io.github.maste.customclans.util.ActionResult;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -28,6 +29,7 @@ class ClanServiceTest {
     private SQLiteDatabaseHolder holder;
     private ClanService clanService;
     private ChatService chatService;
+    private InviteService inviteService;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -35,6 +37,13 @@ class ClanServiceTest {
         PluginConfig pluginConfig = holder.pluginConfig();
         chatService = new ChatService(holder.plugin(), pluginConfig, holder.memberRepository(), MiniMessage.miniMessage());
         clanService = new ClanService(pluginConfig, holder.clanRepository(), holder.memberRepository(), chatService);
+        inviteService = new InviteService(
+                pluginConfig,
+                holder.clanRepository(),
+                holder.memberRepository(),
+                holder.inviteRepository(),
+                chatService
+        );
     }
 
     @AfterEach
@@ -96,6 +105,116 @@ class ClanServiceTest {
         assertEquals("lookup.not-found", result.messageKey());
     }
 
+    @Test
+    void nonPresidentCannotRenameClan() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<Void> result = clanService.renameClan(member, "Golden Guard").join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void nonPresidentCannotUpdateTag() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<Void> result = clanService.updateTag(member, "GG").join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void nonPresidentCannotUpdateColor() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<Void> result = clanService.updateColor(member, "#00FF00").join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void nonPresidentCannotTransferLeadership() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<io.github.maste.customclans.models.ClanMember> result = clanService.transferLeadership(member, "Alice").join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void nonPresidentCannotKickMembers() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<io.github.maste.customclans.models.ClanMember> result = clanService.kickMember(member, "Alice").join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void nonPresidentCannotDisbandClan() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<java.util.List<io.github.maste.customclans.models.ClanMember>> result = clanService.disbandClan(member).join();
+
+        assertFalse(result.success());
+        assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void memberCanLeaveClan() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+        createClanWithMember(president, member, "Crimson Knights");
+
+        ActionResult<Void> result = clanService.leaveClan(member).join();
+
+        assertTrue(result.success());
+        assertEquals("leave.success", result.messageKey());
+        assertTrue(chatService.cachedSnapshot(president.getUniqueId()).isPresent());
+        assertTrue(chatService.cachedSnapshot(member.getUniqueId()).isEmpty());
+    }
+
+    @Test
+    void validHexColorIsAcceptedAndNormalized() {
+        Player player = mockPlayer("Alice");
+        clanService.createClan(player, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.updateColor(player, "#ffaa00").join();
+
+        assertTrue(result.success());
+        assertEquals("color.success", result.messageKey());
+        assertEquals("#FFAA00", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
+    }
+
+    @Test
+    void invalidColorInputIsRejectedSafely() {
+        Player player = mockPlayer("Alice");
+        clanService.createClan(player, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.updateColor(player, "<bold>").join();
+
+        assertFalse(result.success());
+        assertEquals("validation.invalid-color", result.messageKey());
+        assertEquals("gold", clanService.getClanInfo("Crimson Knights").join().value().clan().tagColor());
+    }
+
     private Player mockPlayer(String name) {
         Player player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(UUID.nameUUIDFromBytes(name.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
@@ -103,11 +222,24 @@ class ClanServiceTest {
         return player;
     }
 
+    private Player mockOnlinePlayer(String name) {
+        Player player = mockPlayer(name);
+        when(player.isOnline()).thenReturn(true);
+        return player;
+    }
+
+    private void createClanWithMember(Player president, Player member, String clanName) {
+        clanService.createClan(president, clanName).join();
+        inviteService.sendInvite(president, member).join();
+        inviteService.acceptInvite(member, clanName).join();
+    }
+
     private static final class SQLiteDatabaseHolder {
 
         private final io.github.maste.customclans.repositories.sqlite.SQLiteDatabase database;
         private final io.github.maste.customclans.repositories.sqlite.SQLiteClanRepository clanRepository;
         private final io.github.maste.customclans.repositories.sqlite.SQLiteClanMemberRepository memberRepository;
+        private final io.github.maste.customclans.repositories.sqlite.SQLiteClanInviteRepository inviteRepository;
         private final PluginConfig pluginConfig;
         private final JavaPlugin plugin;
 
@@ -119,6 +251,7 @@ class ClanServiceTest {
             this.database.initialize();
             this.clanRepository = new io.github.maste.customclans.repositories.sqlite.SQLiteClanRepository(database);
             this.memberRepository = new io.github.maste.customclans.repositories.sqlite.SQLiteClanMemberRepository(database);
+            this.inviteRepository = new io.github.maste.customclans.repositories.sqlite.SQLiteClanInviteRepository(database);
             this.plugin = mock(JavaPlugin.class);
             when(plugin.isEnabled()).thenReturn(true);
             this.pluginConfig = new TestPluginConfigFactory().create(plugin);
@@ -130,6 +263,10 @@ class ClanServiceTest {
 
         private io.github.maste.customclans.repositories.sqlite.SQLiteClanMemberRepository memberRepository() {
             return memberRepository;
+        }
+
+        private io.github.maste.customclans.repositories.sqlite.SQLiteClanInviteRepository inviteRepository() {
+            return inviteRepository;
         }
 
         private PluginConfig pluginConfig() {
@@ -158,7 +295,6 @@ class ClanServiceTest {
             yaml.set("clan-chat-format", "<dark_gray>[Clan]</dark_gray> <tag_prefix><white><player_name></white><gray>: </gray><message>");
             yaml.set("clan-chat-enabled", true);
             yaml.set("clan-chat-toggle-enabled", true);
-            yaml.set("debug", false);
             when(plugin.getConfig()).thenReturn(yaml);
             return PluginConfig.load(plugin);
         }

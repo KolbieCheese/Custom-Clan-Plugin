@@ -3,18 +3,25 @@ package io.github.maste.customclans.commands;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.github.maste.customclans.commands.subcommands.AcceptSubcommand;
 import io.github.maste.customclans.commands.subcommands.ChatSubcommand;
+import io.github.maste.customclans.commands.subcommands.ColorSubcommand;
 import io.github.maste.customclans.commands.subcommands.DenySubcommand;
 import io.github.maste.customclans.commands.subcommands.DisbandSubcommand;
 import io.github.maste.customclans.commands.subcommands.GetSubcommand;
 import io.github.maste.customclans.commands.subcommands.HelpSubcommand;
+import io.github.maste.customclans.commands.subcommands.InviteSubcommand;
+import io.github.maste.customclans.commands.subcommands.KickSubcommand;
 import io.github.maste.customclans.commands.subcommands.LeaveSubcommand;
+import io.github.maste.customclans.commands.subcommands.TagSubcommand;
+import io.github.maste.customclans.commands.subcommands.TransferSubcommand;
 import io.github.maste.customclans.config.MessageManager;
 import io.github.maste.customclans.config.PluginConfig;
+import io.github.maste.customclans.util.ActionResult;
+import java.util.concurrent.CompletableFuture;
 import io.github.maste.customclans.services.ChatService;
 import io.github.maste.customclans.services.ClanService;
 import io.github.maste.customclans.services.InviteService;
@@ -100,5 +107,60 @@ class ClanCommandTest {
         new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "stats"});
 
         verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void inviteRejectsExtraArguments() {
+        new InviteSubcommand(plugin, messages, inviteService, pluginConfig).execute(sender, new String[]{"Bob", "extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void tagRejectsExtraArguments() {
+        new TagSubcommand(plugin, messages, clanService).execute(sender, new String[]{"TAG", "extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void colorRejectsExtraArguments() {
+        new ColorSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"gold", "extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void kickRejectsExtraArguments() {
+        new KickSubcommand(plugin, messages, clanService, chatService).execute(sender, new String[]{"Bob", "extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void transferRejectsExtraArguments() {
+        new TransferSubcommand(plugin, messages, clanService, chatService).execute(sender, new String[]{"Bob", "extra"});
+
+        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
+    }
+
+    @Test
+    void publicGetInfoCanBeUsedByNonPlayerSender() {
+        when(clanService.getClanInfo("Azure Guard"))
+                .thenReturn(CompletableFuture.completedFuture(ActionResult.failure("lookup.not-found")));
+
+        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "Guard", "info"});
+
+        verify(clanService).getClanInfo("Azure Guard");
+    }
+
+    @Test
+    void publicGetMembersCanBeUsedByNonPlayerSender() {
+        when(clanService.getClanInfo("Azure Guard"))
+                .thenReturn(CompletableFuture.completedFuture(ActionResult.failure("lookup.not-found")));
+
+        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "Guard", "members"});
+
+        verify(clanService).getClanInfo("Azure Guard");
     }
 }

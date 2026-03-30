@@ -27,8 +27,8 @@ permissions:
     description: Allows public clan lookup commands.
     default: true
   clans.manage:
-    description: Allows clan management commands.
-    default: true
+    description: Allows clan management commands. Players must still be the clan President.
+    default: op
   clans.admin:
     description: Reserved for future admin and bypass features.
     default: op

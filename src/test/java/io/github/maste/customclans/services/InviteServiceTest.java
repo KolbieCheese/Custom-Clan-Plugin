@@ -152,7 +152,6 @@ class InviteServiceTest {
         yaml.set("clan-chat-format", "<dark_gray>[Clan]</dark_gray> <tag_prefix><white><player_name></white><gray>: </gray><message>");
         yaml.set("clan-chat-enabled", true);
         yaml.set("clan-chat-toggle-enabled", true);
-        yaml.set("debug", false);
         when(plugin.getConfig()).thenReturn(yaml);
         return PluginConfig.load(plugin);
     }

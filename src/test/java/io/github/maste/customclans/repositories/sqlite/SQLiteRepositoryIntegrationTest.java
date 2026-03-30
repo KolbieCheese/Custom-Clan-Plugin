@@ -68,6 +68,32 @@ class SQLiteRepositoryIntegrationTest {
     }
 
     @Test
+    void renameClanRejectsCaseInsensitiveDuplicateNames() {
+        ClanCreateResult firstClan = clanRepository.createClan(
+                UUID.randomUUID(),
+                "Alice",
+                "Crimson Knights",
+                "CK",
+                "gold",
+                Instant.now()
+        ).join();
+        ClanCreateResult secondClan = clanRepository.createClan(
+                UUID.randomUUID(),
+                "Bob",
+                "Azure Guard",
+                "AG",
+                "blue",
+                Instant.now()
+        ).join();
+
+        boolean renamed = clanRepository.renameClan(secondClan.clan().id(), "crimson knights").join();
+
+        assertFalse(renamed);
+        assertEquals("Azure Guard", clanRepository.findById(secondClan.clan().id()).join().orElseThrow().name());
+        assertEquals("Crimson Knights", clanRepository.findById(firstClan.clan().id()).join().orElseThrow().name());
+    }
+
+    @Test
     void acceptInviteAddsMemberAndDeletesInvite() {
         UUID president = UUID.randomUUID();
         UUID invited = UUID.randomUUID();

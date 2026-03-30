@@ -40,7 +40,6 @@ public final class PluginConfig {
     private final String clanChatFormat;
     private final boolean clanChatEnabled;
     private final boolean clanChatToggleEnabled;
-    private final boolean debug;
 
     private PluginConfig(
             int maxClanNameLength,
@@ -52,8 +51,7 @@ public final class PluginConfig {
             String publicChatFormat,
             String clanChatFormat,
             boolean clanChatEnabled,
-            boolean clanChatToggleEnabled,
-            boolean debug
+            boolean clanChatToggleEnabled
     ) {
         this.maxClanNameLength = maxClanNameLength;
         this.maxClanTagLength = maxClanTagLength;
@@ -65,7 +63,6 @@ public final class PluginConfig {
         this.clanChatFormat = clanChatFormat;
         this.clanChatEnabled = clanChatEnabled;
         this.clanChatToggleEnabled = clanChatToggleEnabled;
-        this.debug = debug;
     }
 
     public static PluginConfig load(JavaPlugin plugin) {
@@ -101,8 +98,7 @@ public final class PluginConfig {
                 publicChatFormat,
                 clanChatFormat,
                 config.getBoolean("clan-chat-enabled", true),
-                config.getBoolean("clan-chat-toggle-enabled", true),
-                config.getBoolean("debug", false)
+                config.getBoolean("clan-chat-toggle-enabled", true)
         );
     }
 
@@ -144,10 +140,6 @@ public final class PluginConfig {
 
     public boolean clanChatToggleEnabled() {
         return clanChatToggleEnabled;
-    }
-
-    public boolean debug() {
-        return debug;
     }
 
     public List<String> namedClanColorNames() {

@@ -2,14 +2,22 @@ package io.github.maste.customclans.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.github.maste.customclans.config.PluginConfig;
+import io.github.maste.customclans.models.ClanRole;
+import io.github.maste.customclans.models.PlayerClanSnapshot;
 import io.github.maste.customclans.repositories.ClanMemberRepository;
+import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -46,6 +54,41 @@ class ChatServiceTest {
         assertFalse(chatService.shouldRouteToClanChat(player));
     }
 
+    @Test
+    void renderPublicChatColorsOnlyTheClanTag() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        ClanMemberRepository clanMemberRepository = mock(ClanMemberRepository.class);
+        ChatService chatService = new ChatService(
+                plugin,
+                createPluginConfig(true, true),
+                clanMemberRepository,
+                MiniMessage.miniMessage()
+        );
+
+        Player player = mockPlayer("Alice");
+        UUID playerUuid = player.getUniqueId();
+        PlayerClanSnapshot snapshot = new PlayerClanSnapshot(
+                1L,
+                "Crimson Knights",
+                "CK",
+                "#FFAA00",
+                ClanRole.PRESIDENT,
+                playerUuid
+        );
+        when(clanMemberRepository.findSnapshotByPlayerUuid(playerUuid))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(snapshot)));
+
+        chatService.refreshSnapshot(playerUuid).join();
+        Component rendered = chatService.renderPublicChat(player, Component.text("hello"));
+
+        assertEquals("[CK] Alice: hello", PlainTextComponentSerializer.plainText().serialize(rendered));
+        assertEquals(4, rendered.children().size());
+        assertEquals(net.kyori.adventure.text.format.TextColor.fromHexString("#FFAA00"), rendered.children().get(0).style().color());
+        assertEquals(NamedTextColor.WHITE, rendered.children().get(1).style().color());
+        assertEquals(NamedTextColor.GRAY, rendered.children().get(2).style().color());
+        assertNull(rendered.children().get(3).style().color());
+    }
+
     private PluginConfig createPluginConfig(boolean clanChatEnabled, boolean clanChatToggleEnabled) {
         JavaPlugin plugin = mock(JavaPlugin.class);
         YamlConfiguration yaml = new YamlConfiguration();
@@ -58,7 +101,6 @@ class ChatServiceTest {
         yaml.set("clan-chat-format", "<dark_gray>[Clan]</dark_gray> <tag_prefix><white><player_name></white><gray>: </gray><message>");
         yaml.set("clan-chat-enabled", clanChatEnabled);
         yaml.set("clan-chat-toggle-enabled", clanChatToggleEnabled);
-        yaml.set("debug", false);
         when(plugin.getConfig()).thenReturn(yaml);
         return PluginConfig.load(plugin);
     }
