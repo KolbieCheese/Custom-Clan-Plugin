@@ -343,7 +343,7 @@ public final class ClanService {
             List<ClanBannerData.PatternSpec> patterns = bannerMeta.getPatterns().stream()
                     .map(pattern -> new ClanBannerData.PatternSpec(
                             patternTypeId(pattern.getPattern()),
-                            pattern.getColor()
+                            dyeColorId(pattern.getColor())
                     ))
                     .toList();
 
@@ -391,7 +391,7 @@ public final class ClanService {
                 }
 
                 List<Pattern> patterns = clanBanner.patterns().stream()
-                        .map(pattern -> toBannerPattern(pattern.patternId(), pattern.color()))
+                        .map(pattern -> toBannerPattern(pattern.patternId(), pattern.colorId()))
                         .flatMap(Optional::stream)
                         .toList();
                 bannerMeta.setPatterns(patterns);
@@ -646,7 +646,7 @@ public final class ClanService {
             builder.append("{\"pattern\":\"")
                     .append(patternSpec.patternId())
                     .append("\",\"color\":\"")
-                    .append(patternSpec.color().name())
+                    .append(patternSpec.colorId())
                     .append("\"}");
         }
         builder.append(']');
@@ -675,7 +675,11 @@ public final class ClanService {
         return eventDispatcher.dispatch(event);
     }
 
-    private Optional<Pattern> toBannerPattern(String patternId, org.bukkit.DyeColor color) {
+    private Optional<Pattern> toBannerPattern(String patternId, String colorId) {
+        Optional<org.bukkit.DyeColor> resolvedColor = resolveDyeColor(colorId);
+        if (resolvedColor.isEmpty()) {
+            return Optional.empty();
+        }
         String token = patternId;
         int separatorIndex = token.indexOf(':');
         if (separatorIndex >= 0 && separatorIndex + 1 < token.length()) {
@@ -687,7 +691,7 @@ public final class ClanService {
             java.lang.reflect.Method byIdentifier = PatternType.class.getMethod("getByIdentifier", String.class);
             Object resolved = byIdentifier.invoke(null, normalized);
             if (resolved instanceof PatternType patternType) {
-                return Optional.of(new Pattern(color, patternType));
+                return Optional.of(new Pattern(resolvedColor.get(), patternType));
             }
         } catch (ReflectiveOperationException ignored) {
         }
@@ -696,7 +700,7 @@ public final class ClanService {
             java.lang.reflect.Method valueOf = PatternType.class.getMethod("valueOf", String.class);
             Object resolved = valueOf.invoke(null, normalized.toUpperCase(Locale.ROOT));
             if (resolved instanceof PatternType patternType) {
-                return Optional.of(new Pattern(color, patternType));
+                return Optional.of(new Pattern(resolvedColor.get(), patternType));
             }
         } catch (ReflectiveOperationException ignored) {
         }
@@ -728,6 +732,18 @@ public final class ClanService {
         }
 
         return patternType.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private String dyeColorId(org.bukkit.DyeColor dyeColor) {
+        return dyeColor.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private Optional<org.bukkit.DyeColor> resolveDyeColor(String colorId) {
+        try {
+            return Optional.of(org.bukkit.DyeColor.valueOf(colorId.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
     }
 
     private Optional<Material> resolveBannerMaterial(String materialId) {

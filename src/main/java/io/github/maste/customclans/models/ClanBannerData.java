@@ -2,7 +2,6 @@ package io.github.maste.customclans.models;
 
 import java.util.List;
 import java.util.Objects;
-import org.bukkit.DyeColor;
 
 public record ClanBannerData(
         String materialId,
@@ -19,14 +18,17 @@ public record ClanBannerData(
 
     public record PatternSpec(
             String patternId,
-            DyeColor color
+            String colorId
     ) {
         public PatternSpec {
             Objects.requireNonNull(patternId, "patternId");
             if (patternId.isBlank()) {
                 throw new IllegalArgumentException("patternId");
             }
-            Objects.requireNonNull(color, "color");
+            Objects.requireNonNull(colorId, "colorId");
+            if (colorId.isBlank()) {
+                throw new IllegalArgumentException("colorId");
+            }
         }
     }
 }

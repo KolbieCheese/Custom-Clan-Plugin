@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.bukkit.DyeColor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -95,15 +94,15 @@ final class SQLiteMapper {
             }
 
             String patternId;
-            DyeColor dyeColor;
+            String colorId;
             try {
                 patternId = normalizePatternId(matcher.group(1));
-                dyeColor = DyeColor.valueOf(matcher.group(2));
+                colorId = normalizeColorId(matcher.group(2));
             } catch (IllegalArgumentException exception) {
                 LOGGER.warning("Ignoring invalid banner pattern/color enum for clan id " + clanId + ".");
                 return null;
             }
-            patternSpecs.add(new ClanBannerData.PatternSpec(patternId, dyeColor));
+            patternSpecs.add(new ClanBannerData.PatternSpec(patternId, colorId));
         }
 
         return List.copyOf(patternSpecs);
@@ -116,6 +115,14 @@ final class SQLiteMapper {
         }
         if (trimmed.contains(":")) {
             return trimmed.toLowerCase(Locale.ROOT);
+        }
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private static String normalizeColorId(String rawColor) {
+        String trimmed = rawColor.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("color");
         }
         return trimmed.toLowerCase(Locale.ROOT);
     }
