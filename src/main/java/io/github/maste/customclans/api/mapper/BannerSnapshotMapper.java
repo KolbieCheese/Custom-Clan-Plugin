@@ -22,7 +22,7 @@ public final class BannerSnapshotMapper {
                 .toList();
 
         return new ClanBannerSnapshot(
-                data.material().getKey().asString(),
+                toMaterialId(data.material()),
                 deriveBaseColor(data.material()),
                 patternSnapshots
         );
@@ -46,5 +46,9 @@ public final class BannerSnapshotMapper {
     private String normalizePatternId(String patternId) {
         String normalized = patternId.toLowerCase(Locale.ROOT);
         return normalized.contains(":") ? normalized : "minecraft:" + normalized;
+    }
+
+    private String toMaterialId(Material material) {
+        return "minecraft:" + material.name().toLowerCase(Locale.ROOT);
     }
 }

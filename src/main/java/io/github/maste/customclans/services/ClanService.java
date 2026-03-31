@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import org.bukkit.Material;
 import org.bukkit.event.Event;
 import org.bukkit.entity.Player;
+import org.bukkit.block.banner.PatternType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BannerMeta;
 import org.bukkit.block.banner.Pattern;
@@ -341,7 +342,7 @@ public final class ClanService {
 
             List<ClanBannerData.PatternSpec> patterns = bannerMeta.getPatterns().stream()
                     .map(pattern -> new ClanBannerData.PatternSpec(
-                            pattern.getPattern().getKey().asString(),
+                            pattern.getPattern().name().toLowerCase(Locale.ROOT),
                             pattern.getColor()
                     ))
                     .toList();
@@ -681,10 +682,11 @@ public final class ClanService {
             enumName = enumName.substring(separatorIndex + 1);
         }
         enumName = enumName.toUpperCase(Locale.ROOT);
-        try {
-            return Optional.of(new Pattern(color, org.bukkit.block.banner.PatternType.valueOf(enumName)));
-        } catch (IllegalArgumentException exception) {
-            return Optional.empty();
+        for (PatternType patternType : PatternType.values()) {
+            if (patternType.name().equals(enumName)) {
+                return Optional.of(new Pattern(color, patternType));
+            }
         }
+        return Optional.empty();
     }
 }
