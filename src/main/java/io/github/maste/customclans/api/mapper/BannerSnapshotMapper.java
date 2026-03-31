@@ -29,9 +29,12 @@ public final class BannerSnapshotMapper {
     }
 
     private String deriveBaseColor(Material material) {
-        String materialName = material.name();
+        String materialId = toMaterialId(material);
+        String materialName = materialId.startsWith("minecraft:")
+                ? materialId.substring("minecraft:".length())
+                : materialId;
         String suffix = "_BANNER";
-        if (!materialName.endsWith(suffix)) {
+        if (!materialName.toUpperCase(Locale.ROOT).endsWith(suffix)) {
             return null;
         }
 
@@ -49,6 +52,18 @@ public final class BannerSnapshotMapper {
     }
 
     private String toMaterialId(Material material) {
-        return "minecraft:" + material.name().toLowerCase(Locale.ROOT);
+        try {
+            java.lang.reflect.Method getKeyMethod = Material.class.getMethod("getKey");
+            Object key = getKeyMethod.invoke(material);
+            if (key != null) {
+                java.lang.reflect.Method asStringMethod = key.getClass().getMethod("asString");
+                Object result = asStringMethod.invoke(key);
+                if (result instanceof String value && !value.isBlank()) {
+                    return value.toLowerCase(Locale.ROOT);
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+        }
+        return "minecraft:" + material.toString().toLowerCase(Locale.ROOT);
     }
 }

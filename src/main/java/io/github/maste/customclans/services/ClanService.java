@@ -342,7 +342,7 @@ public final class ClanService {
 
             List<ClanBannerData.PatternSpec> patterns = bannerMeta.getPatterns().stream()
                     .map(pattern -> new ClanBannerData.PatternSpec(
-                            pattern.getPattern().name().toLowerCase(Locale.ROOT),
+                            patternTypeId(pattern.getPattern()),
                             pattern.getColor()
                     ))
                     .toList();
@@ -676,17 +676,57 @@ public final class ClanService {
     }
 
     private Optional<Pattern> toBannerPattern(String patternId, org.bukkit.DyeColor color) {
-        String enumName = patternId;
-        int separatorIndex = enumName.indexOf(':');
-        if (separatorIndex >= 0 && separatorIndex + 1 < enumName.length()) {
-            enumName = enumName.substring(separatorIndex + 1);
+        String token = patternId;
+        int separatorIndex = token.indexOf(':');
+        if (separatorIndex >= 0 && separatorIndex + 1 < token.length()) {
+            token = token.substring(separatorIndex + 1);
         }
-        enumName = enumName.toUpperCase(Locale.ROOT);
-        for (PatternType patternType : PatternType.values()) {
-            if (patternType.name().equals(enumName)) {
+        String normalized = token.toLowerCase(Locale.ROOT);
+
+        try {
+            java.lang.reflect.Method byIdentifier = PatternType.class.getMethod("getByIdentifier", String.class);
+            Object resolved = byIdentifier.invoke(null, normalized);
+            if (resolved instanceof PatternType patternType) {
                 return Optional.of(new Pattern(color, patternType));
             }
+        } catch (ReflectiveOperationException ignored) {
         }
+
+        try {
+            java.lang.reflect.Method valueOf = PatternType.class.getMethod("valueOf", String.class);
+            Object resolved = valueOf.invoke(null, normalized.toUpperCase(Locale.ROOT));
+            if (resolved instanceof PatternType patternType) {
+                return Optional.of(new Pattern(color, patternType));
+            }
+        } catch (ReflectiveOperationException ignored) {
+        }
+
         return Optional.empty();
+    }
+
+    private String patternTypeId(PatternType patternType) {
+        try {
+            java.lang.reflect.Method getKeyMethod = PatternType.class.getMethod("getKey");
+            Object key = getKeyMethod.invoke(patternType);
+            if (key != null) {
+                java.lang.reflect.Method asStringMethod = key.getClass().getMethod("asString");
+                Object result = asStringMethod.invoke(key);
+                if (result instanceof String value && !value.isBlank()) {
+                    return value.toLowerCase(Locale.ROOT);
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+        }
+
+        try {
+            java.lang.reflect.Method getIdentifierMethod = PatternType.class.getMethod("getIdentifier");
+            Object result = getIdentifierMethod.invoke(patternType);
+            if (result instanceof String value && !value.isBlank()) {
+                return value.toLowerCase(Locale.ROOT);
+            }
+        } catch (ReflectiveOperationException ignored) {
+        }
+
+        return patternType.toString().toLowerCase(Locale.ROOT);
     }
 }

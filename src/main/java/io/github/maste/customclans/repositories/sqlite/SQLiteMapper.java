@@ -60,7 +60,8 @@ final class SQLiteMapper {
             return Optional.empty();
         }
 
-        if (!material.name().endsWith("_BANNER") || material.name().endsWith("WALL_BANNER")) {
+        String normalizedMaterialName = materialName.trim().toUpperCase(Locale.ROOT);
+        if (!normalizedMaterialName.endsWith("_BANNER") || normalizedMaterialName.endsWith("WALL_BANNER")) {
             LOGGER.warning("Ignoring non-banner clan banner material '" + materialName + "' for clan id " + clanId + ".");
             return Optional.empty();
         }
