@@ -3,15 +3,17 @@ package io.github.maste.customclans.models;
 import java.util.List;
 import java.util.Objects;
 import org.bukkit.DyeColor;
-import org.bukkit.Material;
 
 public record ClanBannerData(
-        Material material,
+        String materialId,
         List<PatternSpec> patterns
 ) {
 
     public ClanBannerData {
-        Objects.requireNonNull(material, "material");
+        Objects.requireNonNull(materialId, "materialId");
+        if (materialId.isBlank()) {
+            throw new IllegalArgumentException("materialId");
+        }
         patterns = List.copyOf(Objects.requireNonNull(patterns, "patterns"));
     }
 

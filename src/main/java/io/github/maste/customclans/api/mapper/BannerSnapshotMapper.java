@@ -5,7 +5,6 @@ import io.github.maste.customclans.api.model.ClanBannerSnapshot;
 import io.github.maste.customclans.models.ClanBannerData;
 import java.util.List;
 import java.util.Locale;
-import org.bukkit.Material;
 
 public final class BannerSnapshotMapper {
 
@@ -22,17 +21,17 @@ public final class BannerSnapshotMapper {
                 .toList();
 
         return new ClanBannerSnapshot(
-                toMaterialId(data.material()),
-                deriveBaseColor(data.material()),
+                normalizeMaterialId(data.materialId()),
+                deriveBaseColor(data.materialId()),
                 patternSnapshots
         );
     }
 
-    private String deriveBaseColor(Material material) {
-        String materialId = toMaterialId(material);
-        String materialName = materialId.startsWith("minecraft:")
-                ? materialId.substring("minecraft:".length())
-                : materialId;
+    private String deriveBaseColor(String materialId) {
+        String normalizedMaterialId = normalizeMaterialId(materialId);
+        String materialName = normalizedMaterialId.startsWith("minecraft:")
+                ? normalizedMaterialId.substring("minecraft:".length())
+                : normalizedMaterialId;
         String suffix = "_BANNER";
         if (!materialName.toUpperCase(Locale.ROOT).endsWith(suffix)) {
             return null;
@@ -51,19 +50,8 @@ public final class BannerSnapshotMapper {
         return normalized.contains(":") ? normalized : "minecraft:" + normalized;
     }
 
-    private String toMaterialId(Material material) {
-        try {
-            java.lang.reflect.Method getKeyMethod = Material.class.getMethod("getKey");
-            Object key = getKeyMethod.invoke(material);
-            if (key != null) {
-                java.lang.reflect.Method asStringMethod = key.getClass().getMethod("asString");
-                Object result = asStringMethod.invoke(key);
-                if (result instanceof String value && !value.isBlank()) {
-                    return value.toLowerCase(Locale.ROOT);
-                }
-            }
-        } catch (ReflectiveOperationException ignored) {
-        }
-        return "minecraft:" + material.toString().toLowerCase(Locale.ROOT);
+    private String normalizeMaterialId(String materialId) {
+        String normalized = materialId.toLowerCase(Locale.ROOT);
+        return normalized.contains(":") ? normalized : "minecraft:" + normalized;
     }
 }

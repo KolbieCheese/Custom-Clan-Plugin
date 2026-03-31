@@ -380,12 +380,12 @@ public final class ClanService {
                 }
 
                 ClanBannerData clanBanner = optionalBanner.get();
-                Material material = clanBanner.material();
-                if (material.isAir()) {
+                Optional<Material> resolvedMaterial = resolveBannerMaterial(clanBanner.materialId());
+                if (resolvedMaterial.isEmpty() || resolvedMaterial.get().isAir()) {
                     return ActionResult.failure("banner.not-set");
                 }
 
-                ItemStack bannerItem = new ItemStack(material, 1);
+                ItemStack bannerItem = new ItemStack(resolvedMaterial.get(), 1);
                 if (!(bannerItem.getItemMeta() instanceof BannerMeta bannerMeta)) {
                     return ActionResult.failure("banner.not-set");
                 }
@@ -728,5 +728,19 @@ public final class ClanService {
         }
 
         return patternType.toString().toLowerCase(Locale.ROOT);
+    }
+
+    private Optional<Material> resolveBannerMaterial(String materialId) {
+        String token = materialId;
+        int separatorIndex = token.indexOf(':');
+        if (separatorIndex >= 0 && separatorIndex + 1 < token.length()) {
+            token = token.substring(separatorIndex + 1);
+        }
+        String enumName = token.toUpperCase(Locale.ROOT);
+        try {
+            return Optional.of(Material.valueOf(enumName));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
     }
 }

@@ -13,7 +13,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.bukkit.DyeColor;
-import org.bukkit.Material;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -52,14 +51,6 @@ final class SQLiteMapper {
             return Optional.empty();
         }
 
-        Material material;
-        try {
-            material = Material.valueOf(materialName);
-        } catch (IllegalArgumentException exception) {
-            LOGGER.warning("Ignoring invalid clan banner material '" + materialName + "' for clan id " + clanId + ".");
-            return Optional.empty();
-        }
-
         String normalizedMaterialName = materialName.trim().toUpperCase(Locale.ROOT);
         if (!normalizedMaterialName.endsWith("_BANNER") || normalizedMaterialName.endsWith("WALL_BANNER")) {
             LOGGER.warning("Ignoring non-banner clan banner material '" + materialName + "' for clan id " + clanId + ".");
@@ -71,7 +62,8 @@ final class SQLiteMapper {
             return Optional.empty();
         }
 
-        return Optional.of(new ClanBannerData(material, patterns));
+        String normalizedMaterialId = normalizedMaterialName.toLowerCase(Locale.ROOT);
+        return Optional.of(new ClanBannerData(normalizedMaterialId, patterns));
     }
 
     private static List<ClanBannerData.PatternSpec> parsePatternSpecs(long clanId, String patternsJson) {
