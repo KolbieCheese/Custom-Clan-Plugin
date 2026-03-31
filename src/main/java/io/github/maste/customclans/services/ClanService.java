@@ -283,16 +283,16 @@ public final class ClanService {
 
             ItemStack itemInHand = player.getInventory().getItemInMainHand();
             if (itemInHand == null || itemInHand.getAmount() <= 0 || itemInHand.getType().isAir()) {
-                return CompletableFuture.completedFuture(ActionResult.failure("setbanner.invalid-item"));
+                return CompletableFuture.completedFuture(ActionResult.failure("banner.must-hold-banner"));
             }
 
             Material material = itemInHand.getType();
             String materialName = material.name();
             if (!materialName.endsWith("_BANNER") || materialName.endsWith("WALL_BANNER")) {
-                return CompletableFuture.completedFuture(ActionResult.failure("setbanner.invalid-item"));
+                return CompletableFuture.completedFuture(ActionResult.failure("banner.must-hold-banner"));
             }
             if (!(itemInHand.getItemMeta() instanceof BannerMeta bannerMeta)) {
-                return CompletableFuture.completedFuture(ActionResult.failure("setbanner.invalid-meta"));
+                return CompletableFuture.completedFuture(ActionResult.failure("banner.invalid-banner"));
             }
 
             List<ClanBannerData.PatternSpec> patterns = bannerMeta.getPatterns().stream()
@@ -307,7 +307,7 @@ public final class ClanService {
                             materialName,
                             serializePatternSpecs(patterns)
                     )
-                    .thenApply(unused -> ActionResult.success("setbanner.success", null));
+                    .thenApply(unused -> ActionResult.success("banner.set-success", null));
         });
     }
 
@@ -341,7 +341,7 @@ public final class ClanService {
                         .toList();
                 bannerMeta.setPatterns(patterns);
                 bannerItem.setItemMeta(bannerMeta);
-                return ActionResult.success("banner.success", bannerItem);
+                return ActionResult.success("banner.receive-success", bannerItem);
             });
         });
     }

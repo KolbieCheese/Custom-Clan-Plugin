@@ -70,8 +70,8 @@ help:
     - "<yellow>/clan description <text></yellow><gray> - Set your clan description (President only, max 500 chars).</gray>"
     - "<yellow>/clan tag <new tag></yellow><gray> - Change your clan tag (President only).</gray>"
     - "<yellow>/clan color <named color|#RRGGBB></yellow><gray> - Change your clan tag color using a named color or hex (President only).</gray>"
-    - "<yellow>/clan setbanner</yellow><gray> - Set your clan banner from the banner in your main hand (President only).</gray>"
-    - "<yellow>/clan banner</yellow><gray> - Claim your clan's current banner item.</gray>"
+    - "<yellow>/clan setbanner</yellow><gray> - Set your clan banner (President only; must hold a banner in your main hand).</gray>"
+    - "<yellow>/clan banner</yellow><gray> - Receive a copy of your clan's current banner (any clan member).</gray>"
     - "<yellow>/clan list</yellow><gray> - View all active clans and member counts.</gray>"
     - "<yellow>/clan transfer <player></yellow><gray> - Transfer the presidency (President only).</gray>"
     - "<yellow>/clan kick <player></yellow><gray> - Remove a member from your clan (President only).</gray>"
@@ -146,14 +146,12 @@ tag:
 color:
   success: "<prefix><green>Updated your clan tag color to <white><color></white>.</green>"
 
-setbanner:
-  success: "<prefix><green>Updated your clan banner.</green>"
-  invalid-item: "<prefix><red>You must hold a banner in your main hand.</red>"
-  invalid-meta: "<prefix><red>That banner item is missing valid banner pattern data.</red>"
-
 banner:
-  success: "<prefix><green>Added your clan banner to your inventory.</green>"
+  must-hold-banner: "<prefix><red>You must hold a banner in your main hand.</red>"
+  invalid-banner: "<prefix><red>That banner item is missing valid banner pattern data.</red>"
+  set-success: "<prefix><green>Updated your clan banner.</green>"
   not-set: "<prefix><red>Your clan does not have a banner set yet.</red>"
+  receive-success: "<prefix><green>Added your clan banner to your inventory.</green>"
   inventory-overflow: "<prefix><yellow>Your inventory was full, so leftover banner items were dropped at your feet.</yellow>"
 
 kick:
