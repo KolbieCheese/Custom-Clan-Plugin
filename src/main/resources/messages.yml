@@ -15,7 +15,8 @@ usage:
   accept: "/clan accept <clan name>"
   deny: "/clan deny <clan name>"
   leave: "/clan leave"
-  get: "/clan get <clan name> <info|members>"
+  info: "/clan info [clan name]"
+  members: "/clan members [clan name]"
   chat: "/clan chat <message>"
   chat-toggle: "/clan chat toggle"
   rename: "/clan rename <new clan name>"
@@ -59,8 +60,8 @@ help:
     - "<yellow>/clan accept <clan name></yellow><gray> - Accept an invite from that clan by name.</gray>"
     - "<yellow>/clan deny <clan name></yellow><gray> - Deny an invite from that clan by name.</gray>"
     - "<yellow>/clan leave</yellow><gray> - Leave your current clan (President must transfer or disband first).</gray>"
-    - "<yellow>/clan get <clan name> info</yellow><gray> - Publicly view clan name, tag, color, President, and member counts.</gray>"
-    - "<yellow>/clan get <clan name> members</yellow><gray> - Publicly view clan members and the current President.</gray>"
+    - "<yellow>/clan info [clan name]</yellow><gray> - View clan name, tag, color, President, and member counts. Defaults to your clan.</gray>"
+    - "<yellow>/clan members [clan name]</yellow><gray> - View clan members and the current President. Defaults to your clan.</gray>"
     - "<yellow>/clan chat <message></yellow><gray> - Send a clan-only message (any clan member).</gray>"
     - "<yellow>/clan chat toggle</yellow><gray> - Toggle clan chat mode (any clan member).</gray>"
     - "<yellow>/clan rename <new clan name></yellow><gray> - Rename your clan (President only).</gray>"
@@ -96,6 +97,7 @@ leave:
 
 lookup:
   not-found: "<prefix><red>Sorry, no clan named <white><name></white> exists.</red>"
+  no-clan-and-no-name: "<prefix><red>not part of clan and no specified clan name given</red>"
 
 info:
   header: "<gold><bold>Clan Info</bold></gold>"
