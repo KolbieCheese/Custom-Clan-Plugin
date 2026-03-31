@@ -11,7 +11,9 @@ import io.github.maste.customclans.models.InviteCreateResult;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
+import org.bukkit.Material;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -161,5 +163,51 @@ class SQLiteRepositoryIntegrationTest {
         assertEquals(InviteCreateResult.Status.CREATED, secondInvite.status());
         assertTrue(clanInviteRepository.findByClanIdAndInvitedPlayerUuid(firstClan.clan().id(), invited).join().isPresent());
         assertTrue(clanInviteRepository.findByClanIdAndInvitedPlayerUuid(secondClan.clan().id(), invited).join().isPresent());
+    }
+
+    @Test
+    void bannerPersistsAndReloadsWithPatternOrder() {
+        Assumptions.assumeTrue(supportsBannerMaterialApi());
+        ClanCreateResult created = clanRepository.createClan(
+                UUID.randomUUID(),
+                "Alice",
+                "Azure Guard",
+                "AG",
+                "blue",
+                Instant.now()
+        ).join();
+
+        String patternsJson = "[" +
+                "{\"pattern\":\"STRIPE_TOP\",\"color\":\"BLACK\"}," +
+                "{\"pattern\":\"BORDER\",\"color\":\"WHITE\"}" +
+                "]";
+
+        clanRepository.updateClanBanner(created.clan().id(), Material.BLUE_BANNER.name(), patternsJson).join();
+
+        try (java.sql.Connection connection = database.openConnection();
+             java.sql.PreparedStatement statement = connection.prepareStatement(
+                     """
+                             SELECT banner_material, banner_patterns_json
+                             FROM clans
+                             WHERE id = ?
+                             """
+             )) {
+            statement.setLong(1, created.clan().id());
+            try (java.sql.ResultSet resultSet = statement.executeQuery()) {
+                assertTrue(resultSet.next());
+                assertEquals(Material.BLUE_BANNER.name(), resultSet.getString("banner_material"));
+                assertEquals(patternsJson, resultSet.getString("banner_patterns_json"));
+            }
+        } catch (java.sql.SQLException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    private static boolean supportsBannerMaterialApi() {
+        try {
+            return org.bukkit.Bukkit.getServer() != null && org.bukkit.Bukkit.getItemFactory() != null;
+        } catch (Throwable throwable) {
+            return false;
+        }
     }
 }
