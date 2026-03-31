@@ -124,6 +124,20 @@ public final class SQLiteClanRepository implements ClanRepository {
         });
     }
 
+
+    @Override
+    public CompletableFuture<Optional<Clan>> findByNormalizedName(String normalizedName) {
+        return database.supplyAsync(() -> {
+            try (var connection = database.openConnection();
+                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM clans WHERE normalized_name = ?")) {
+                statement.setString(1, normalizedName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    return resultSet.next() ? Optional.of(SQLiteMapper.mapClan(resultSet)) : Optional.empty();
+                }
+            }
+        });
+    }
+
     @Override
     public CompletableFuture<Boolean> renameClan(long clanId, String newName) {
         String normalizedName = ValidationUtil.normalizeClanName(newName);
@@ -243,6 +257,22 @@ public final class SQLiteClanRepository implements ClanRepository {
                 java.util.ArrayList<ClanListEntry> clans = new java.util.ArrayList<>();
                 while (resultSet.next()) {
                     clans.add(SQLiteMapper.mapClanListEntry(resultSet));
+                }
+                return List.copyOf(clans);
+            }
+        });
+    }
+
+
+    @Override
+    public CompletableFuture<List<Clan>> findAll() {
+        return database.supplyAsync(() -> {
+            try (var connection = database.openConnection();
+                 PreparedStatement statement = connection.prepareStatement("SELECT * FROM clans ORDER BY lower(name) ASC");
+                 ResultSet resultSet = statement.executeQuery()) {
+                java.util.ArrayList<Clan> clans = new java.util.ArrayList<>();
+                while (resultSet.next()) {
+                    clans.add(SQLiteMapper.mapClan(resultSet));
                 }
                 return List.copyOf(clans);
             }
