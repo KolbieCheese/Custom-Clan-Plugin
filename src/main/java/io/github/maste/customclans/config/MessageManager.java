@@ -5,7 +5,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -16,6 +21,34 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MessageManager {
+
+    private static final Pattern TAG_PATTERN = Pattern.compile("<([^<>]+)>");
+    private static final Pattern HEX_COLOR_TAG_PATTERN = Pattern.compile("#[0-9a-f]{6}");
+    private static final Set<String> FORMATTING_TAGS = Set.of(
+            "black",
+            "dark_blue",
+            "dark_green",
+            "dark_aqua",
+            "dark_red",
+            "dark_purple",
+            "gold",
+            "gray",
+            "dark_gray",
+            "blue",
+            "green",
+            "aqua",
+            "red",
+            "light_purple",
+            "yellow",
+            "white",
+            "obfuscated",
+            "bold",
+            "strikethrough",
+            "underlined",
+            "italic",
+            "reset",
+            "newline"
+    );
 
     private final JavaPlugin plugin;
     private final MiniMessage miniMessage;
@@ -47,7 +80,7 @@ public final class MessageManager {
         }
 
         this.configuration = loadedConfiguration;
-        migrateOutdatedInfoLines();
+        reconcileConfiguredLists();
     }
 
     public MiniMessage miniMessage() {
@@ -98,42 +131,93 @@ public final class MessageManager {
         return TagResolver.resolver(resolvers);
     }
 
-    private void migrateOutdatedInfoLines() {
-        if (configuration.getDefaults() == null || !configuration.contains("info.lines", true)) {
+    private void reconcileConfiguredLists() {
+        if (configuration.getDefaults() == null) {
             return;
         }
 
-        List<String> configuredLines = configuration.getStringList("info.lines");
-        if (configuredLines.isEmpty() || containsPlaceholder(configuredLines, "description")) {
-            return;
-        }
+        for (String path : configuration.getDefaults().getKeys(true)) {
+            if (!configuration.getDefaults().isList(path) || !configuration.contains(path, true)) {
+                continue;
+            }
 
-        List<String> defaultLines = configuration.getDefaults().getStringList("info.lines");
-        int descriptionLineIndex = indexOfPlaceholder(defaultLines, "description");
-        if (descriptionLineIndex < 0) {
-            return;
-        }
+            List<String> defaultLines = configuration.getDefaults().getStringList(path);
+            if (defaultLines.isEmpty()) {
+                continue;
+            }
 
-        List<String> migratedLines = new ArrayList<>(configuredLines);
-        int insertionIndex = indexOfPlaceholder(migratedLines, "member_count");
-        if (insertionIndex < 0) {
-            insertionIndex = Math.min(descriptionLineIndex, migratedLines.size());
+            List<String> configuredLines = configuration.getStringList(path);
+            List<String> reconciledLines = reconcileList(defaultLines, configuredLines);
+            if (!configuredLines.equals(reconciledLines)) {
+                configuration.set(path, reconciledLines);
+                plugin.getLogger().info("Updated outdated message list '" + path + "' from bundled defaults.");
+            }
         }
-        migratedLines.add(insertionIndex, defaultLines.get(descriptionLineIndex));
-        configuration.set("info.lines", migratedLines);
     }
 
-    private boolean containsPlaceholder(List<String> lines, String placeholder) {
-        return indexOfPlaceholder(lines, placeholder) >= 0;
+    private List<String> reconcileList(List<String> defaultLines, List<String> configuredLines) {
+        List<String> reconciledLines = new ArrayList<>(defaultLines.size() + configuredLines.size());
+        Set<Integer> matchedConfiguredIndexes = new HashSet<>();
+
+        for (String defaultLine : defaultLines) {
+            int matchingConfiguredIndex = findMatchingConfiguredLine(configuredLines, matchedConfiguredIndexes, defaultLine);
+            if (matchingConfiguredIndex >= 0) {
+                matchedConfiguredIndexes.add(matchingConfiguredIndex);
+                reconciledLines.add(configuredLines.get(matchingConfiguredIndex));
+                continue;
+            }
+            reconciledLines.add(defaultLine);
+        }
+
+        for (int index = 0; index < configuredLines.size(); index++) {
+            if (!matchedConfiguredIndexes.contains(index)) {
+                reconciledLines.add(configuredLines.get(index));
+            }
+        }
+
+        return reconciledLines;
     }
 
-    private int indexOfPlaceholder(List<String> lines, String placeholder) {
-        String token = "<" + placeholder + ">";
-        for (int index = 0; index < lines.size(); index++) {
-            if (lines.get(index).contains(token)) {
+    private int findMatchingConfiguredLine(List<String> configuredLines, Set<Integer> matchedConfiguredIndexes, String defaultLine) {
+        String defaultSignature = lineSignature(defaultLine);
+        for (int index = 0; index < configuredLines.size(); index++) {
+            if (matchedConfiguredIndexes.contains(index)) {
+                continue;
+            }
+            if (defaultSignature.equals(lineSignature(configuredLines.get(index)))) {
                 return index;
             }
         }
         return -1;
+    }
+
+    private String lineSignature(String line) {
+        StringBuilder signature = new StringBuilder();
+        Matcher matcher = TAG_PATTERN.matcher(line);
+        int currentIndex = 0;
+        while (matcher.find()) {
+            signature.append(line, currentIndex, matcher.start());
+            String token = matcher.group(1).trim().toLowerCase(Locale.ROOT);
+            if (isPlaceholderToken(token)) {
+                signature.append('<').append(token).append('>');
+            }
+            currentIndex = matcher.end();
+        }
+        signature.append(line.substring(currentIndex));
+        return normalizeVisibleText(signature.toString());
+    }
+
+    private boolean isPlaceholderToken(String token) {
+        return !token.isEmpty()
+                && !token.startsWith("/")
+                && !token.contains(":")
+                && !FORMATTING_TAGS.contains(token)
+                && !HEX_COLOR_TAG_PATTERN.matcher(token).matches();
+    }
+
+    private String normalizeVisibleText(String line) {
+        return line.replaceAll("\\s+", " ")
+                .trim()
+                .toLowerCase(Locale.ROOT);
     }
 }

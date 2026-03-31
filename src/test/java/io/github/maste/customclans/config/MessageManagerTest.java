@@ -113,6 +113,35 @@ class MessageManagerTest {
         );
     }
 
+    @Test
+    void componentListRestoresMissingHelpLinesFromBundledDefaults() throws Exception {
+        Files.writeString(tempDir.resolve("messages.yml"), """
+                general:
+                  prefix: "<gold><bold>Clans</bold></gold><gray> > </gray>"
+                help:
+                  lines:
+                    - "<gold><bold>Lightweight Clans Commands</bold></gold>"
+                    - "<yellow>/clan help</yellow><gray> - Show this help list.</gray>"
+                    - "<yellow>/clan create <clan name></yellow><gray> - Create a new clan and become its President.</gray>"
+                    - "<yellow>/clan invite <player></yellow><gray> - Invite an online player to your clan (any clan member).</gray>"
+                """);
+
+        MessageManager messageManager = new MessageManager(mockPlugin(tempDir));
+
+        var lines = messageManager.componentList("help.lines");
+        var serializedLines = lines.stream()
+                .map(component -> PlainTextComponentSerializer.plainText().serialize(component))
+                .toList();
+
+        assertFalse(lines.isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                serializedLines.stream().anyMatch(line -> line.contains("Set your clan description"))
+        );
+        org.junit.jupiter.api.Assertions.assertTrue(
+                serializedLines.stream().anyMatch(line -> line.contains("/clan reload"))
+        );
+    }
+
     private JavaPlugin mockPlugin(Path dataFolder) {
         JavaPlugin plugin = mock(JavaPlugin.class);
         when(plugin.getDataFolder()).thenReturn(new File(dataFolder.toString()));
