@@ -182,7 +182,7 @@ class SQLiteRepositoryIntegrationTest {
 
         clanRepository.updateClanBanner(created.clan().id(), Material.BLUE_BANNER.name(), patternsJson).join();
 
-        try (java.sql.Connection connection = database.dataSource().getConnection();
+        try (java.sql.Connection connection = database.openConnection();
              java.sql.PreparedStatement statement = connection.prepareStatement(
                      """
                              SELECT banner_material, banner_patterns_json
