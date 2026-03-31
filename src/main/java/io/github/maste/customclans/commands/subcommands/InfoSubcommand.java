@@ -4,55 +4,52 @@ import io.github.maste.customclans.commands.AbstractClanSubcommand;
 import io.github.maste.customclans.config.MessageManager;
 import io.github.maste.customclans.config.PluginConfig;
 import io.github.maste.customclans.models.ClanInfo;
-import io.github.maste.customclans.models.ClanMember;
-import io.github.maste.customclans.models.ClanRole;
 import io.github.maste.customclans.services.ClanService;
+import io.github.maste.customclans.util.ActionResult;
+import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class GetSubcommand extends AbstractClanSubcommand {
+public final class InfoSubcommand extends AbstractClanSubcommand {
 
     private final ClanService clanService;
     private final PluginConfig pluginConfig;
 
-    public GetSubcommand(
+    public InfoSubcommand(
             JavaPlugin plugin,
             MessageManager messages,
             ClanService clanService,
             PluginConfig pluginConfig
     ) {
-        super(plugin, messages, "get", "clans.lookup", false);
+        super(plugin, messages, "info", "clans.lookup", false);
         this.clanService = clanService;
         this.pluginConfig = pluginConfig;
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length < 2) {
-            sendUsage(sender, "usage.get");
-            return;
-        }
-
-        String view = args[args.length - 1].toLowerCase(java.util.Locale.ROOT);
-        if (!view.equals("info") && !view.equals("members")) {
-            sendUsage(sender, "usage.get");
-            return;
-        }
-
-        String clanName = String.join(" ", java.util.Arrays.copyOf(args, args.length - 1)).trim();
-        if (clanName.isEmpty()) {
-            sendUsage(sender, "usage.get");
-            return;
-        }
-
-        handleAction(sender, clanService.getClanInfo(clanName), result -> {
-            if (view.equals("info")) {
-                sendInfo(sender, result.value());
+        if (args.length == 0) {
+            if (!(sender instanceof Player player)) {
+                sendUsage(sender, "usage.info");
                 return;
             }
-            sendMembers(sender, result.value());
-        });
+
+            CompletableFuture<ActionResult<ClanInfo>> action = clanService.cachedSnapshot(player.getUniqueId())
+                    .map(snapshot -> clanService.getClanInfo(snapshot.clanName()))
+                    .orElseGet(() -> CompletableFuture.completedFuture(ActionResult.failure("lookup.no-clan-and-no-name")));
+            handleAction(sender, action, result -> sendInfo(sender, result.value()));
+            return;
+        }
+
+        String clanName = String.join(" ", args).trim();
+        if (clanName.isEmpty()) {
+            sendUsage(sender, "usage.info");
+            return;
+        }
+
+        handleAction(sender, clanService.getClanInfo(clanName), result -> sendInfo(sender, result.value()));
     }
 
     @Override
@@ -60,21 +57,6 @@ public final class GetSubcommand extends AbstractClanSubcommand {
         if (args.length == 0) {
             return java.util.List.of();
         }
-
-        if (args.length >= 2) {
-            String clanPrefix = String.join(" ", java.util.Arrays.copyOf(args, args.length - 1)).trim();
-            if (clanService.clanNameExists(clanPrefix)) {
-                String token = args[args.length - 1].toLowerCase(java.util.Locale.ROOT);
-                return java.util.List.of("info", "members").stream()
-                        .filter(option -> option.startsWith(token))
-                        .toList();
-            }
-        }
-
-        if (clanService.clanNameExists(String.join(" ", args).trim())) {
-            return java.util.List.of("info", "members");
-        }
-
         return clanService.suggestClanNameWords(args);
     }
 
@@ -99,15 +81,5 @@ public final class GetSubcommand extends AbstractClanSubcommand {
                 Placeholder.unparsed("max_members", String.valueOf(pluginConfig.maxClanSize())),
                 Placeholder.unparsed("online_count", String.valueOf(onlineCount))
         );
-    }
-
-    private void sendMembers(CommandSender sender, ClanInfo clanInfo) {
-        messages.send(sender, "members.header");
-        for (ClanMember clanMember : clanInfo.members()) {
-            String key = clanMember.role() == ClanRole.PRESIDENT
-                    ? "members.president-line"
-                    : "members.member-line";
-            messages.send(sender, key, Placeholder.unparsed("name", clanMember.lastKnownName()));
-        }
     }
 }

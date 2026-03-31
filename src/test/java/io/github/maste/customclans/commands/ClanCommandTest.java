@@ -16,10 +16,11 @@ import io.github.maste.customclans.commands.subcommands.ColorSubcommand;
 import io.github.maste.customclans.commands.subcommands.DenySubcommand;
 import io.github.maste.customclans.commands.subcommands.DisbandSubcommand;
 import io.github.maste.customclans.commands.subcommands.DescriptionSubcommand;
-import io.github.maste.customclans.commands.subcommands.GetSubcommand;
+import io.github.maste.customclans.commands.subcommands.InfoSubcommand;
 import io.github.maste.customclans.commands.subcommands.HelpSubcommand;
 import io.github.maste.customclans.commands.subcommands.InviteSubcommand;
 import io.github.maste.customclans.commands.subcommands.KickSubcommand;
+import io.github.maste.customclans.commands.subcommands.MembersSubcommand;
 import io.github.maste.customclans.commands.subcommands.LeaveSubcommand;
 import io.github.maste.customclans.commands.subcommands.ListSubcommand;
 import io.github.maste.customclans.commands.subcommands.RenameSubcommand;
@@ -127,39 +128,23 @@ class ClanCommandTest {
     }
 
     @Test
-    void getRequiresActionSelector() {
-        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure"});
-
-        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
-    }
-
-    @Test
-    void getRejectsUnknownView() {
-        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "stats"});
-
-        verify(messages).send(eq(sender), eq("errors.usage"), any(TagResolver.class));
-    }
-
-    @Test
-    void getTabCompletionSuggestsNextClanWordForMultiWordNames() {
+    void infoTabCompletionSuggestsNextClanWordForMultiWordNames() {
         when(clanService.suggestClanNameWords(any(String[].class))).thenReturn(List.of("Guard"));
-        when(clanService.clanNameExists("Azure")).thenReturn(false);
-        when(clanService.clanNameExists("Azure ")).thenReturn(false);
 
-        List<String> suggestions = new GetSubcommand(plugin, messages, clanService, pluginConfig)
+        List<String> suggestions = new InfoSubcommand(plugin, messages, clanService, pluginConfig)
                 .tabComplete(sender, new String[]{"Azure", ""});
 
         org.junit.jupiter.api.Assertions.assertEquals(List.of("Guard"), suggestions);
     }
 
     @Test
-    void getTabCompletionSuggestsViewAfterExactClanName() {
-        when(clanService.clanNameExists("Azure Guard")).thenReturn(true);
+    void membersTabCompletionSuggestsNextClanWordForMultiWordNames() {
+        when(clanService.suggestClanNameWords(any(String[].class))).thenReturn(List.of("Guard"));
 
-        List<String> suggestions = new GetSubcommand(plugin, messages, clanService, pluginConfig)
-                .tabComplete(sender, new String[]{"Azure", "Guard", ""});
+        List<String> suggestions = new MembersSubcommand(plugin, messages, clanService)
+                .tabComplete(sender, new String[]{"Azure", ""});
 
-        org.junit.jupiter.api.Assertions.assertEquals(List.of("info", "members"), suggestions);
+        org.junit.jupiter.api.Assertions.assertEquals(List.of("Guard"), suggestions);
     }
 
     @Test
@@ -212,21 +197,21 @@ class ClanCommandTest {
     }
 
     @Test
-    void publicGetInfoCanBeUsedByNonPlayerSender() {
+    void publicInfoCanBeUsedByNonPlayerSenderWhenClanNameSpecified() {
         when(clanService.getClanInfo("Azure Guard"))
                 .thenReturn(CompletableFuture.completedFuture(ActionResult.failure("lookup.not-found")));
 
-        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "Guard", "info"});
+        new InfoSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "Guard"});
 
         verify(clanService).getClanInfo("Azure Guard");
     }
 
     @Test
-    void publicGetMembersCanBeUsedByNonPlayerSender() {
+    void publicMembersCanBeUsedByNonPlayerSenderWhenClanNameSpecified() {
         when(clanService.getClanInfo("Azure Guard"))
                 .thenReturn(CompletableFuture.completedFuture(ActionResult.failure("lookup.not-found")));
 
-        new GetSubcommand(plugin, messages, clanService, pluginConfig).execute(sender, new String[]{"Azure", "Guard", "members"});
+        new MembersSubcommand(plugin, messages, clanService).execute(sender, new String[]{"Azure", "Guard"});
 
         verify(clanService).getClanInfo("Azure Guard");
     }

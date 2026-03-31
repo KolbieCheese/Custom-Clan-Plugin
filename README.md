@@ -6,7 +6,7 @@ Lightweight Clans is a lightweight, command-only Minecraft clans plugin for Pape
 
 - Command-based clans with one enforced `PRESIDENT` and any number of `MEMBER`s up to the configured limit
 - Creator automatically becomes the clan President
-- Public clan lookup by name through `/clan get <clan name> info|members`
+- Public clan lookup through `/clan info [clan name]` and `/clan members [clan name]`
 - Case-insensitive clan names for create, rename, invites, and lookup while preserving the chosen display name
 - Safe public chat tag rendering with Adventure Components and `AsyncChatEvent`
 - Safe clan tag colors using named Minecraft colors or `#RRGGBB`
@@ -19,8 +19,8 @@ Lightweight Clans is a lightweight, command-only Minecraft clans plugin for Pape
 
 - Public:
   - `/clan help`
-  - `/clan get <clan name> info`
-  - `/clan get <clan name> members`
+  - `/clan info [clan name]`
+  - `/clan members [clan name]`
   - `/clan list`
 - General player actions:
   - `/clan create <clan name>`
@@ -48,7 +48,7 @@ Lightweight Clans is a lightweight, command-only Minecraft clans plugin for Pape
 - `clans.create` (default `true`): `/clan create`
 - `clans.invite` (default `true`): `/clan invite`
 - `clans.chat` (default `true`): `/clan chat`, `/clan chat toggle`
-- `clans.lookup` (default `true`): `/clan get <clan name> info|members`
+- `clans.lookup` (default `true`): `/clan info [clan name]` and `/clan members [clan name]`
 - `clans.manage` (default `true`): `/clan rename`, `/clan description`, `/clan tag`, `/clan color`, `/clan transfer`, `/clan kick`, `/clan disband`
 - `clans.admin` (default `op`): reserved for future admin or bypass features
 
@@ -141,7 +141,7 @@ Accepted clan tag colors are:
 
 Formatting codes, MiniMessage tags, and style modifiers such as bold, italic, underline, strikethrough, and obfuscated text are not accepted as clan color input.
 
-Clan lookup is always public through `/clan get <clan name> info` and `/clan get <clan name> members`. Those commands do not require clan membership.
+Clan lookup is always public through `/clan info [clan name]` and `/clan members [clan name]`. When no clan name is provided, players default to their own clan; these commands still do not require clan membership when a clan name is specified.
 
 ## MVP Limitations
 

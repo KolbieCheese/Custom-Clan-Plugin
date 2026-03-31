@@ -9,12 +9,13 @@ import io.github.maste.customclans.commands.subcommands.CreateSubcommand;
 import io.github.maste.customclans.commands.subcommands.DenySubcommand;
 import io.github.maste.customclans.commands.subcommands.DescriptionSubcommand;
 import io.github.maste.customclans.commands.subcommands.DisbandSubcommand;
-import io.github.maste.customclans.commands.subcommands.GetSubcommand;
 import io.github.maste.customclans.commands.subcommands.HelpSubcommand;
 import io.github.maste.customclans.commands.subcommands.InviteSubcommand;
+import io.github.maste.customclans.commands.subcommands.InfoSubcommand;
 import io.github.maste.customclans.commands.subcommands.KickSubcommand;
 import io.github.maste.customclans.commands.subcommands.LeaveSubcommand;
 import io.github.maste.customclans.commands.subcommands.ListSubcommand;
+import io.github.maste.customclans.commands.subcommands.MembersSubcommand;
 import io.github.maste.customclans.commands.subcommands.RenameSubcommand;
 import io.github.maste.customclans.commands.subcommands.ReloadSubcommand;
 import io.github.maste.customclans.commands.subcommands.TagSubcommand;
@@ -108,7 +109,8 @@ public final class CustomClansPlugin extends JavaPlugin {
                 new AcceptSubcommand(this, messageManager, inviteService, clanService),
                 new DenySubcommand(this, messageManager, inviteService, clanService),
                 new LeaveSubcommand(this, messageManager, clanService),
-                new GetSubcommand(this, messageManager, clanService, pluginConfig),
+                new InfoSubcommand(this, messageManager, clanService, pluginConfig),
+                new MembersSubcommand(this, messageManager, clanService),
                 new ChatSubcommand(this, messageManager, chatService),
                 new InviteSubcommand(this, messageManager, inviteService, pluginConfig),
                 new RenameSubcommand(this, messageManager, clanService),
