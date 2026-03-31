@@ -9,8 +9,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after a clan member leaves voluntarily.
  *
- * <p>This event is dispatched on the main server thread after membership changes have been
- * persisted and the updated clan state is available through the public API.
+ * <p>This event is dispatched on the main server thread only after persistence completes, so the
+ * updated clan membership state is durable and available through the public API.
  */
 public final class ClanMemberLeftEvent extends Event {
 

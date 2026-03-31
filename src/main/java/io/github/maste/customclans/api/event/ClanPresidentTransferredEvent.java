@@ -9,8 +9,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after clan presidency has been transferred from one member to another.
  *
- * <p>This event is dispatched on the main server thread after the transfer has been persisted and
- * the updated clan state is available through the public API.
+ * <p>This event is dispatched on the main server thread only after persistence completes, so the
+ * updated clan leadership state is durable and available through the public API.
  */
 public final class ClanPresidentTransferredEvent extends Event {
 

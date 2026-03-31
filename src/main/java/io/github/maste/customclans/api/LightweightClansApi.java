@@ -7,6 +7,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Public read-only integration API for Lightweight Clans snapshots.
+ *
+ * <p>Lifecycle events exposed under {@code io.github.maste.customclans.api.event} are guaranteed to
+ * be dispatched on the main server thread <strong>after</strong> persistence operations complete, so
+ * listeners can immediately consume durable state through this API.
+ */
 public interface LightweightClansApi {
 
     Optional<ClanSnapshot> getClanById(long clanId);

@@ -8,8 +8,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after a clan banner has been created, changed, or removed.
  *
- * <p>This event is dispatched on the main server thread after banner changes have been persisted
- * and the updated clan state is available through the public API.
+ * <p>This event is dispatched on the main server thread only after persistence completes, so banner
+ * changes and the updated clan state are durable and available through the public API.
  */
 public final class ClanBannerUpdatedEvent extends Event {
 

@@ -159,6 +159,19 @@ maybeClan.ifPresent(clan -> getLogger().info("Player clan: " + clan.name()));
 
 The API returns immutable snapshot records instead of internal mutable service/repository objects.
 
+Lifecycle integration events are also exposed under `io.github.maste.customclans.api.event`:
+
+- `ClanCreatedEvent`
+- `ClanUpdatedEvent`
+- `ClanDeletedEvent`
+- `ClanMemberJoinedEvent`
+- `ClanMemberLeftEvent`
+- `ClanMemberKickedEvent`
+- `ClanPresidentTransferredEvent`
+- `ClanBannerUpdatedEvent`
+
+These lifecycle events are guaranteed to be fired on the main server thread only after persistence has completed, so listeners can safely read the durable post-change snapshots through `LightweightClansApi` immediately.
+
 For auto-discovery, the plugin jar also includes `META-INF/snarky-outputs.json` with the stable output id `lightweightclans:clan_chat` and the exact event class name. External integrations such as Snarky Server can parse that manifest to detect Lightweight Clans support without hardcoded plugin-specific logic.
 
 Accepted clan tag colors are:

@@ -14,7 +14,8 @@ import org.bukkit.event.HandlerList;
  *
  * <p>This public integration event is fired for both direct {@code /clan chat <message>} usage and
  * clan-chat toggle messages rerouted from {@code AsyncChatEvent}. The event is always fired on the
- * main server thread so external plugins can inspect or cancel clan chat delivery safely.
+ * main server thread so external plugins can inspect or cancel clan chat delivery safely. Unlike
+ * lifecycle events, this event is about message delivery and is not tied to persistence completion.
  */
 public final class ClanChatMessageEvent extends Event implements Cancellable {
 

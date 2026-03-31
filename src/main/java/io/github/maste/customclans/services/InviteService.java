@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -28,7 +27,7 @@ public final class InviteService {
     private final ClanMemberRepository clanMemberRepository;
     private final ClanInviteRepository clanInviteRepository;
     private final ChatService chatService;
-    private final JavaPlugin plugin;
+    private final ServiceEventDispatcher eventDispatcher;
     private final ApiSnapshotMapper snapshotMapper;
 
     public InviteService(
@@ -39,12 +38,12 @@ public final class InviteService {
             ClanInviteRepository clanInviteRepository,
             ChatService chatService
     ) {
-        this.plugin = plugin;
         this.pluginConfig = pluginConfig;
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.clanInviteRepository = clanInviteRepository;
         this.chatService = chatService;
+        this.eventDispatcher = new ServiceEventDispatcher(plugin);
         this.snapshotMapper = new ApiSnapshotMapper();
     }
 
@@ -204,23 +203,6 @@ public final class InviteService {
     }
 
     private CompletableFuture<Void> publishEvent(Event event) {
-        if (!plugin.isEnabled()) {
-            return CompletableFuture.completedFuture(null);
-        }
-        if (Bukkit.isPrimaryThread()) {
-            plugin.getServer().getPluginManager().callEvent(event);
-            return CompletableFuture.completedFuture(null);
-        }
-
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            try {
-                plugin.getServer().getPluginManager().callEvent(event);
-                future.complete(null);
-            } catch (Throwable throwable) {
-                future.completeExceptionally(throwable);
-            }
-        });
-        return future;
+        return eventDispatcher.dispatch(event);
     }
 }

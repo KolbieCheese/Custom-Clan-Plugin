@@ -10,8 +10,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after an existing clan has been updated.
  *
- * <p>This event is dispatched on the main server thread after the updated clan state is durable and
- * available through the public API.
+ * <p>This event is dispatched on the main server thread only after persistence completes, so the
+ * updated clan state is durable and immediately available through the public API.
  */
 public final class ClanUpdatedEvent extends Event {
 
