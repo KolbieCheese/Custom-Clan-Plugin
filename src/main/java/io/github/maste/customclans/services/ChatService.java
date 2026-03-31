@@ -228,23 +228,29 @@ public final class ChatService {
             return CompletableFuture.completedFuture(ActionResult.success("", null));
         }
 
-        CompletableFuture<ActionResult<Void>> resultFuture = new CompletableFuture<>();
+        org.bukkit.Server server = plugin.getServer();
+        if (server == null) {
+            return CompletableFuture.completedFuture(ActionResult.success("", null));
+        }
+
         Runnable dispatchTask = () -> {
             try {
                 broadcastClanMessage(sender, snapshot, message, rawMessage, members, toggleRouted);
-                resultFuture.complete(ActionResult.success("", null));
             } catch (Throwable throwable) {
-                resultFuture.completeExceptionally(throwable);
+                plugin.getLogger().log(Level.WARNING, "Failed to dispatch clan chat message task", throwable);
             }
         };
 
-        if (plugin.getServer().isPrimaryThread()) {
-            dispatchTask.run();
-        } else {
-            plugin.getServer().getScheduler().runTask(plugin, dispatchTask);
+        try {
+            if (server.isPrimaryThread()) {
+                dispatchTask.run();
+            } else {
+                server.getScheduler().runTask(plugin, dispatchTask);
+            }
+            return CompletableFuture.completedFuture(ActionResult.success("", null));
+        } catch (Throwable throwable) {
+            return CompletableFuture.failedFuture(throwable);
         }
-
-        return resultFuture;
     }
 
     private void broadcastClanMessage(
