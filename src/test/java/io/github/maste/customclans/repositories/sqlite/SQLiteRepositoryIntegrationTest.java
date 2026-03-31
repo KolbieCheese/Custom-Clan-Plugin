@@ -205,7 +205,7 @@ class SQLiteRepositoryIntegrationTest {
 
     private static boolean supportsBannerMaterialApi() {
         try {
-            return Material.valueOf("WHITE_BANNER") != null;
+            return org.bukkit.Bukkit.getServer() != null && org.bukkit.Bukkit.getItemFactory() != null;
         } catch (Throwable throwable) {
             return false;
         }
