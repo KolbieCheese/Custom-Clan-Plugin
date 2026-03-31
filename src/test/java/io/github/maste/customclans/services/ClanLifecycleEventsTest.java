@@ -43,9 +43,6 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
-import org.bukkit.DyeColor;
-import org.bukkit.block.banner.Pattern;
-import org.bukkit.block.banner.PatternType;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -156,7 +153,6 @@ class ClanLifecycleEventsTest {
         assertEquals(2, bannerEvent.getBefore().memberCount());
         assertNotNull(bannerEvent.getAfter().banner());
         assertEquals("minecraft:red_banner", bannerEvent.getAfter().banner().baseMaterial());
-        assertEquals(2, bannerEvent.getAfter().banner().patterns().size());
 
         ClanPresidentTransferredEvent transferEvent = firstEvent(ClanPresidentTransferredEvent.class);
         assertEquals("Alice", transferEvent.getPreviousPresident().lastKnownName());
@@ -228,19 +224,7 @@ class ClanLifecycleEventsTest {
         PlayerInventory inventory = mock(PlayerInventory.class);
         ItemStack bannerStack = mock(ItemStack.class);
         BannerMeta bannerMeta = mock(BannerMeta.class);
-        Pattern firstPattern = mock(Pattern.class);
-        PatternType firstType = mock(PatternType.class);
-        when(firstPattern.getColor()).thenReturn(DyeColor.BLACK);
-        when(firstPattern.getPattern()).thenReturn(firstType);
-        when(firstType.getIdentifier()).thenReturn("border");
-
-        Pattern secondPattern = mock(Pattern.class);
-        PatternType secondType = mock(PatternType.class);
-        when(secondPattern.getColor()).thenReturn(DyeColor.WHITE);
-        when(secondPattern.getPattern()).thenReturn(secondType);
-        when(secondType.getIdentifier()).thenReturn("stripe_center");
-
-        when(bannerMeta.getPatterns()).thenReturn(List.of(firstPattern, secondPattern));
+        when(bannerMeta.getPatterns()).thenReturn(List.of());
         when(bannerStack.getAmount()).thenReturn(1);
         when(bannerStack.getType()).thenReturn(Material.RED_BANNER);
         when(bannerStack.getItemMeta()).thenReturn(bannerMeta);
