@@ -84,7 +84,7 @@ final class SQLiteMapper {
             return List.of();
         }
 
-        java.util.regex.Pattern entryPattern = java.util.regex.Pattern.compile("\\{\"pattern\":\"([^\"]+)\",\"color\":\"([A-Z_]+)\"\\}");
+        java.util.regex.Pattern entryPattern = java.util.regex.Pattern.compile("\\{\"pattern\":\"([^\"]+)\",\"color\":\"([A-Za-z_]+)\"\\}");
         ArrayList<ClanBannerData.PatternSpec> patternSpecs = new ArrayList<>();
         for (String rawEntry : content.split("(?<=\\}),(?=\\{)")) {
             java.util.regex.Matcher matcher = entryPattern.matcher(rawEntry);
