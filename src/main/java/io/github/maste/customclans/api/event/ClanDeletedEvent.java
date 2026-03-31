@@ -8,8 +8,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after a clan has been deleted.
  *
- * <p>This event is dispatched on the main server thread after the clan has been fully removed from
- * plugin-managed storage.
+ * <p>This event is dispatched on the main server thread only after persistence completes, when the
+ * clan has been fully removed from plugin-managed storage.
  */
 public final class ClanDeletedEvent extends Event {
 

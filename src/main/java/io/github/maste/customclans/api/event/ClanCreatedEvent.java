@@ -8,8 +8,8 @@ import org.bukkit.event.HandlerList;
 /**
  * Fired after a clan has been created and persisted.
  *
- * <p>This event is dispatched on the main server thread after the new clan state is durable and
- * available through the public API.
+ * <p>This event is dispatched on the main server thread only after persistence completes, so the
+ * new clan state is durable and immediately available through the public API.
  */
 public final class ClanCreatedEvent extends Event {
 
