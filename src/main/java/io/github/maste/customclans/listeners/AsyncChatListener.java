@@ -26,7 +26,7 @@ public final class AsyncChatListener implements Listener {
     public void onAsyncChat(AsyncChatEvent event) {
         if (chatService.shouldRouteToClanChat(event.getPlayer())) {
             event.setCancelled(true);
-            chatService.sendClanChat(event.getPlayer(), event.message()).whenComplete((result, throwable) ->
+            chatService.sendToggleRoutedClanChat(event.getPlayer(), event.message()).whenComplete((result, throwable) ->
                     SchedulerUtil.runSync(plugin, () -> {
                         if (throwable != null) {
                             plugin.getLogger().log(Level.SEVERE, "Failed to route clan chat message", throwable);

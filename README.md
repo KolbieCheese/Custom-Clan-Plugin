@@ -100,6 +100,40 @@ Public chat uses `AsyncChatEvent` with a custom renderer. The plugin creates a s
 
 Clan chat supports both `/clan chat <message>` and `/clan chat toggle`. The `clan-chat-enabled` config option disables clan chat completely, while `clan-chat-toggle-enabled` only controls whether players can keep clan chat mode turned on for normal chat. Toggle mode is session-only and is stored in memory, so it clears on logout or restart. When enabled, the plugin intercepts `AsyncChatEvent`, cancels the public broadcast, and forwards the message only to online clan members.
 
+## Plugin Integrations
+
+Lightweight Clans exposes a public Bukkit/Paper integration event at `io.github.maste.customclans.api.event.ClanChatMessageEvent`.
+
+- Fired for `/clan chat <message>`
+- Fired for clan-chat toggle messages rerouted from `AsyncChatEvent`
+- Fired before the final clan chat broadcast
+- Cancellable to prevent clan chat delivery
+- Always fired on the main server thread, even when the original message came from async chat
+
+The event exposes:
+
+- `Player sender`
+- `UUID senderUuid`
+- `String clanName`
+- `String clanTag`
+- `String plainMessage`
+- `Component messageComponent`
+- `boolean toggleRouted`
+- immutable `List<UUID> recipientUuids`
+
+External plugins can listen to the event without sniffing normal public chat:
+
+```java
+@EventHandler
+public void onClanChat(ClanChatMessageEvent event) {
+    if (event.isToggleRouted()) {
+        // Handle clan-chat toggle traffic separately if needed.
+    }
+}
+```
+
+For auto-discovery, the plugin jar also includes `META-INF/snarky-outputs.json` with the stable output id `lightweightclans:clan_chat` and the exact event class name. External integrations such as Snarky Server can parse that manifest to detect Lightweight Clans support without hardcoded plugin-specific logic.
+
 Accepted clan tag colors are:
 
 - named Minecraft colors such as `gold`, `red`, `dark_red`, or `light_purple`

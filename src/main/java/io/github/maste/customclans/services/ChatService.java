@@ -1,5 +1,6 @@
 package io.github.maste.customclans.services;
 
+import io.github.maste.customclans.api.event.ClanChatMessageEvent;
 import io.github.maste.customclans.config.PluginConfig;
 import io.github.maste.customclans.integrations.discord.ClanChatRelay;
 import io.github.maste.customclans.models.ClanMember;
@@ -7,7 +8,6 @@ import io.github.maste.customclans.models.PlayerClanSnapshot;
 import io.github.maste.customclans.repositories.ClanMemberRepository;
 import io.github.maste.customclans.util.ActionResult;
 import io.github.maste.customclans.util.MiniMessageUtil;
-import io.github.maste.customclans.util.SchedulerUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -26,6 +26,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ChatService {
+
+    private static final PlainTextComponentSerializer PLAIN_TEXT_SERIALIZER = PlainTextComponentSerializer.plainText();
 
     private final JavaPlugin plugin;
     private final PluginConfig pluginConfig;
@@ -121,15 +123,23 @@ public final class ChatService {
         if (rawMessage == null || rawMessage.isBlank()) {
             return CompletableFuture.completedFuture(ActionResult.failure("chat.no-message"));
         }
-        return sendClanChat(sender, Component.text(rawMessage), rawMessage);
+        return sendClanChat(sender, Component.text(rawMessage), rawMessage, false);
     }
 
     public CompletableFuture<ActionResult<Void>> sendClanChat(Player sender, Component message) {
-        String rawMessage = PlainTextComponentSerializer.plainText().serialize(message).trim();
-        return sendClanChat(sender, message, rawMessage);
+        return sendClanChat(sender, message, plainMessage(message), false);
     }
 
-    private CompletableFuture<ActionResult<Void>> sendClanChat(Player sender, Component message, String rawMessage) {
+    public CompletableFuture<ActionResult<Void>> sendToggleRoutedClanChat(Player sender, Component message) {
+        return sendClanChat(sender, message, plainMessage(message), true);
+    }
+
+    private CompletableFuture<ActionResult<Void>> sendClanChat(
+            Player sender,
+            Component message,
+            String rawMessage,
+            boolean toggleRouted
+    ) {
         if (!pluginConfig.clanChatEnabled()) {
             return CompletableFuture.completedFuture(ActionResult.failure("chat.unavailable"));
         }
@@ -142,10 +152,8 @@ public final class ChatService {
             }
 
             PlayerClanSnapshot snapshot = optionalSnapshot.get();
-            return clanMemberRepository.findByClanId(snapshot.clanId()).thenApply(members -> {
-                SchedulerUtil.runSync(plugin, () -> broadcastClanMessage(sender, snapshot, message, rawMessage, members));
-                return ActionResult.success("", null);
-            });
+            return clanMemberRepository.findByClanId(snapshot.clanId()).thenCompose(members ->
+                    dispatchClanMessage(sender, snapshot, message, rawMessage, members, toggleRouted));
         });
     }
 
@@ -199,13 +207,72 @@ public final class ChatService {
                 .toList();
     }
 
+    private String plainMessage(Component message) {
+        return PLAIN_TEXT_SERIALIZER.serialize(message).trim();
+    }
+
+    private CompletableFuture<ActionResult<Void>> dispatchClanMessage(
+            Player sender,
+            PlayerClanSnapshot snapshot,
+            Component message,
+            String rawMessage,
+            List<ClanMember> members,
+            boolean toggleRouted
+    ) {
+        if (!plugin.isEnabled()) {
+            return CompletableFuture.completedFuture(ActionResult.success("", null));
+        }
+
+        CompletableFuture<ActionResult<Void>> resultFuture = new CompletableFuture<>();
+        Runnable dispatchTask = () -> {
+            try {
+                broadcastClanMessage(sender, snapshot, message, rawMessage, members, toggleRouted);
+                resultFuture.complete(ActionResult.success("", null));
+            } catch (Throwable throwable) {
+                resultFuture.completeExceptionally(throwable);
+            }
+        };
+
+        if (plugin.getServer().isPrimaryThread()) {
+            dispatchTask.run();
+        } else {
+            plugin.getServer().getScheduler().runTask(plugin, dispatchTask);
+        }
+
+        return resultFuture;
+    }
+
     private void broadcastClanMessage(
             Player sender,
             PlayerClanSnapshot snapshot,
             Component message,
             String rawMessage,
-            List<ClanMember> members
+            List<ClanMember> members,
+            boolean toggleRouted
     ) {
+        List<Player> recipients = members.stream()
+                .map(member -> plugin.getServer().getPlayer(member.playerUuid()))
+                .filter(player -> player != null && player.isOnline())
+                .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        List<UUID> recipientUuids = recipients.stream()
+                .map(Player::getUniqueId)
+                .toList();
+
+        ClanChatMessageEvent event = new ClanChatMessageEvent(
+                sender,
+                snapshot.clanName(),
+                snapshot.tag(),
+                rawMessage,
+                message,
+                toggleRouted,
+                recipientUuids
+        );
+        plugin.getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            return;
+        }
+
         Component clanChatMessage = MiniMessageUtil.renderChatLine(
                 miniMessage,
                 pluginConfig.clanChatFormat(),
@@ -214,11 +281,7 @@ public final class ChatService {
                 message
         );
 
-        members.stream()
-                .map(member -> plugin.getServer().getPlayer(member.playerUuid()))
-                .filter(player -> player != null && player.isOnline())
-                .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                .forEach(player -> player.sendMessage(clanChatMessage));
+        recipients.forEach(player -> player.sendMessage(clanChatMessage));
 
         // External relay is intentionally isolated from in-game chat delivery.
         clanChatRelay.relay(sender, snapshot, rawMessage);

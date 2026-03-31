@@ -1,0 +1,13 @@
+{
+  "plugin": "LightweightClans",
+  "version": 1,
+  "outputs": [
+    {
+      "id": "lightweightclans:clan_chat",
+      "displayName": "Lightweight Clans - Clan Chat",
+      "eventClass": "io.github.maste.customclans.api.event.ClanChatMessageEvent",
+      "kind": "chat",
+      "description": "Clan chat messages from Lightweight Clans"
+    }
+  ]
+}
