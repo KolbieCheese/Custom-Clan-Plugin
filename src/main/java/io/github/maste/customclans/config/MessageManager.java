@@ -54,7 +54,11 @@ public final class MessageManager {
     }
 
     public String raw(String path) {
-        return configuration.getString(path, "<red>Missing message: " + path + "</red>");
+        String message = configuration.getString(path);
+        if (message == null && configuration.getDefaults() != null) {
+            message = configuration.getDefaults().getString(path);
+        }
+        return message != null ? message : "<red>Missing message: " + path + "</red>";
     }
 
     public Component component(String path, TagResolver... extraResolvers) {
@@ -63,6 +67,9 @@ public final class MessageManager {
 
     public List<Component> componentList(String path, TagResolver... extraResolvers) {
         List<String> rawList = configuration.getStringList(path);
+        if (rawList.isEmpty() && !configuration.contains(path, true) && configuration.getDefaults() != null) {
+            rawList = configuration.getDefaults().getStringList(path);
+        }
         List<Component> components = new ArrayList<>(rawList.size());
         TagResolver resolver = withPrefix(extraResolvers);
         for (String line : rawList) {
