@@ -47,6 +47,7 @@ public final class MessageManager {
         }
 
         this.configuration = loadedConfiguration;
+        migrateOutdatedInfoLines();
     }
 
     public MiniMessage miniMessage() {
@@ -95,5 +96,44 @@ public final class MessageManager {
             resolvers.add(extraResolver);
         }
         return TagResolver.resolver(resolvers);
+    }
+
+    private void migrateOutdatedInfoLines() {
+        if (configuration.getDefaults() == null || !configuration.contains("info.lines", true)) {
+            return;
+        }
+
+        List<String> configuredLines = configuration.getStringList("info.lines");
+        if (configuredLines.isEmpty() || containsPlaceholder(configuredLines, "description")) {
+            return;
+        }
+
+        List<String> defaultLines = configuration.getDefaults().getStringList("info.lines");
+        int descriptionLineIndex = indexOfPlaceholder(defaultLines, "description");
+        if (descriptionLineIndex < 0) {
+            return;
+        }
+
+        List<String> migratedLines = new ArrayList<>(configuredLines);
+        int insertionIndex = indexOfPlaceholder(migratedLines, "member_count");
+        if (insertionIndex < 0) {
+            insertionIndex = Math.min(descriptionLineIndex, migratedLines.size());
+        }
+        migratedLines.add(insertionIndex, defaultLines.get(descriptionLineIndex));
+        configuration.set("info.lines", migratedLines);
+    }
+
+    private boolean containsPlaceholder(List<String> lines, String placeholder) {
+        return indexOfPlaceholder(lines, placeholder) >= 0;
+    }
+
+    private int indexOfPlaceholder(List<String> lines, String placeholder) {
+        String token = "<" + placeholder + ">";
+        for (int index = 0; index < lines.size(); index++) {
+            if (lines.get(index).contains(token)) {
+                return index;
+            }
+        }
+        return -1;
     }
 }

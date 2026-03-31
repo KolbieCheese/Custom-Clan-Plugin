@@ -77,6 +77,42 @@ class MessageManagerTest {
         );
     }
 
+    @Test
+    void componentListAddsDescriptionLineToOlderInfoLists() throws Exception {
+        Files.writeString(tempDir.resolve("messages.yml"), """
+                general:
+                  prefix: "<gold><bold>Clans</bold></gold><gray> > </gray>"
+                info:
+                  lines:
+                    - "<gray>Name: <white><name></white>"
+                    - "<gray>Tag: <white>[<tag>]</white>"
+                    - "<gray>Color: <white><color></white>"
+                    - "<gray>President: <white><president></white>"
+                    - "<gray>Members: <white><member_count>/<max_members></white>"
+                    - "<gray>Online: <white><online_count></white>"
+                """);
+
+        MessageManager messageManager = new MessageManager(mockPlugin(tempDir));
+
+        var lines = messageManager.componentList(
+                "info.lines",
+                Placeholder.unparsed("name", "Crimson Knights"),
+                Placeholder.unparsed("tag", "CK"),
+                Placeholder.unparsed("color", "Red"),
+                Placeholder.unparsed("president", "Alice"),
+                Placeholder.unparsed("description", "Raid-focused PvE clan"),
+                Placeholder.unparsed("member_count", "3"),
+                Placeholder.unparsed("max_members", "20"),
+                Placeholder.unparsed("online_count", "2")
+        );
+
+        assertEquals(7, lines.size());
+        assertEquals(
+                "Description: Raid-focused PvE clan",
+                PlainTextComponentSerializer.plainText().serialize(lines.get(4))
+        );
+    }
+
     private JavaPlugin mockPlugin(Path dataFolder) {
         JavaPlugin plugin = mock(JavaPlugin.class);
         when(plugin.getDataFolder()).thenReturn(new File(dataFolder.toString()));
