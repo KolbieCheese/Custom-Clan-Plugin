@@ -135,6 +135,30 @@ public void onClanChat(ClanChatMessageEvent event) {
 }
 ```
 
+
+
+Lightweight Clans also registers a public service API at startup:
+
+- Service interface: `io.github.maste.customclans.api.LightweightClansApi`
+- Bukkit registration: `ServicesManager#register(..., ServicePriority.Normal)`
+- Unregistered automatically on plugin disable/reload
+
+Example lookup from another plugin:
+
+```java
+RegisteredServiceProvider<LightweightClansApi> registration = Bukkit.getServicesManager()
+        .getRegistration(LightweightClansApi.class);
+if (registration == null) {
+    return;
+}
+
+LightweightClansApi clansApi = registration.getProvider();
+Optional<ClanSnapshot> maybeClan = clansApi.getClanForPlayer(player.getUniqueId());
+maybeClan.ifPresent(clan -> getLogger().info("Player clan: " + clan.name()));
+```
+
+The API returns immutable snapshot records instead of internal mutable service/repository objects.
+
 For auto-discovery, the plugin jar also includes `META-INF/snarky-outputs.json` with the stable output id `lightweightclans:clan_chat` and the exact event class name. External integrations such as Snarky Server can parse that manifest to detect Lightweight Clans support without hardcoded plugin-specific logic.
 
 Accepted clan tag colors are:

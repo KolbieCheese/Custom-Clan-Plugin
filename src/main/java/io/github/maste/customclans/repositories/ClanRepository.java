@@ -25,6 +25,8 @@ public interface ClanRepository {
 
     CompletableFuture<Optional<Clan>> findByName(String name);
 
+    CompletableFuture<Optional<Clan>> findByNormalizedName(String normalizedName);
+
     CompletableFuture<Boolean> renameClan(long clanId, String newName);
 
     CompletableFuture<Void> updateClanTag(long clanId, String newTag);
@@ -38,6 +40,8 @@ public interface ClanRepository {
     CompletableFuture<Optional<ClanBannerData>> findClanBanner(long clanId);
 
     CompletableFuture<List<ClanListEntry>> listActiveClans();
+
+    CompletableFuture<List<Clan>> findAll();
 
     CompletableFuture<List<String>> listClanNames();
 

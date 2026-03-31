@@ -1,5 +1,6 @@
 package io.github.maste.customclans.plugin;
 
+import io.github.maste.customclans.api.LightweightClansApi;
 import io.github.maste.customclans.commands.ClanCommand;
 import io.github.maste.customclans.commands.ClanSubcommand;
 import io.github.maste.customclans.commands.subcommands.AcceptSubcommand;
@@ -39,6 +40,7 @@ import io.github.maste.customclans.repositories.sqlite.SQLiteDatabase;
 import io.github.maste.customclans.services.ChatService;
 import io.github.maste.customclans.services.ClanService;
 import io.github.maste.customclans.services.InviteService;
+import io.github.maste.customclans.services.api.LightweightClansApiImpl;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +53,7 @@ import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class CustomClansPlugin extends JavaPlugin {
@@ -63,6 +66,7 @@ public final class CustomClansPlugin extends JavaPlugin {
     private ClanService clanService;
     private ChatService chatService;
     private InviteService inviteService;
+    private LightweightClansApi lightweightClansApi;
 
     @Override
     public void onEnable() {
@@ -85,6 +89,7 @@ public final class CustomClansPlugin extends JavaPlugin {
         ClanMemberRepository clanMemberRepository = new SQLiteClanMemberRepository(database);
         ClanInviteRepository clanInviteRepository = new SQLiteClanInviteRepository(database);
         initializeRuntimeServices(clanRepository, clanMemberRepository, clanInviteRepository);
+        registerPublicApi(clanRepository, clanMemberRepository);
 
         registerCommand();
         registerListeners();
@@ -94,6 +99,7 @@ public final class CustomClansPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        unregisterPublicApi();
         if (database != null) {
             database.close();
         }
@@ -169,6 +175,8 @@ public final class CustomClansPlugin extends JavaPlugin {
         ClanMemberRepository clanMemberRepository = new SQLiteClanMemberRepository(database);
         ClanInviteRepository clanInviteRepository = new SQLiteClanInviteRepository(database);
         initializeRuntimeServices(clanRepository, clanMemberRepository, clanInviteRepository);
+        unregisterPublicApi();
+        registerPublicApi(clanRepository, clanMemberRepository);
 
         getServer().getScheduler().cancelTasks(this);
         HandlerList.unregisterAll(this);
@@ -190,6 +198,25 @@ public final class CustomClansPlugin extends JavaPlugin {
         chatService = new ChatService(this, pluginConfig, clanMemberRepository, clanChatRelay, messageManager.miniMessage());
         clanService = new ClanService(pluginConfig, clanRepository, clanMemberRepository, chatService);
         inviteService = new InviteService(pluginConfig, clanRepository, clanMemberRepository, clanInviteRepository, chatService);
+    }
+
+
+    private void registerPublicApi(
+            ClanRepository clanRepository,
+            ClanMemberRepository clanMemberRepository
+    ) {
+        lightweightClansApi = new LightweightClansApiImpl(clanRepository, clanMemberRepository);
+        getServer().getServicesManager().register(
+                LightweightClansApi.class,
+                lightweightClansApi,
+                this,
+                ServicePriority.Normal
+        );
+    }
+
+    private void unregisterPublicApi() {
+        getServer().getServicesManager().unregisterAll(this);
+        lightweightClansApi = null;
     }
 
     private void migrateLegacyDataFolderIfNeeded() {
