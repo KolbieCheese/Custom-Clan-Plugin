@@ -43,6 +43,8 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
+import org.bukkit.DyeColor;
+import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.banner.PatternType;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -226,10 +228,19 @@ class ClanLifecycleEventsTest {
         PlayerInventory inventory = mock(PlayerInventory.class);
         ItemStack bannerStack = mock(ItemStack.class);
         BannerMeta bannerMeta = mock(BannerMeta.class);
-        when(bannerMeta.getPatterns()).thenReturn(List.of(
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.BLACK, PatternType.BORDER),
-                new org.bukkit.block.banner.Pattern(org.bukkit.DyeColor.WHITE, PatternType.STRIPE_CENTER)
-        ));
+        Pattern firstPattern = mock(Pattern.class);
+        PatternType firstType = mock(PatternType.class);
+        when(firstPattern.getColor()).thenReturn(DyeColor.BLACK);
+        when(firstPattern.getPattern()).thenReturn(firstType);
+        when(firstType.getIdentifier()).thenReturn("border");
+
+        Pattern secondPattern = mock(Pattern.class);
+        PatternType secondType = mock(PatternType.class);
+        when(secondPattern.getColor()).thenReturn(DyeColor.WHITE);
+        when(secondPattern.getPattern()).thenReturn(secondType);
+        when(secondType.getIdentifier()).thenReturn("stripe_center");
+
+        when(bannerMeta.getPatterns()).thenReturn(List.of(firstPattern, secondPattern));
         when(bannerStack.getAmount()).thenReturn(1);
         when(bannerStack.getType()).thenReturn(Material.RED_BANNER);
         when(bannerStack.getItemMeta()).thenReturn(bannerMeta);
