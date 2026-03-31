@@ -564,9 +564,11 @@ public final class ClanService {
 
             PlayerClanSnapshot snapshot = snapshotResult.value();
             return loadRequiredClanSnapshot(snapshot.clanId()).thenCompose(before ->
-                    clanMemberRepository.findByClanId(snapshot.clanId()).thenCompose(members ->
-                            clanRepository.disbandClan(snapshot.clanId()).thenCompose(unused ->
-                                    publishEvent(new ClanDeletedEvent(before)).thenApply(eventUnused -> {
+                    clanMemberRepository.findByClanId(snapshot.clanId()).thenCompose(members -> {
+                        Instant deletedAt = Instant.now();
+                        ClanSnapshot deletedSnapshot = withUpdatedAt(before, deletedAt);
+                        return clanRepository.disbandClan(snapshot.clanId(), deletedAt).thenCompose(unused ->
+                                    publishEvent(new ClanDeletedEvent(deletedSnapshot)).thenApply(eventUnused -> {
                                         chatService.clearPlayerStates(members.stream().map(ClanMember::playerUuid).toList());
                                         return ActionResult.success(
                                                 "disband.success-self",
@@ -574,8 +576,8 @@ public final class ClanService {
                                                 members
                                         );
                                     })
-                            )
-                    )
+                            );
+                    })
             );
         });
     }
@@ -669,6 +671,24 @@ public final class ClanService {
                 .filter(member -> member.playerUuid().equals(playerUuid))
                 .findFirst()
                 .orElseGet(() -> new ClanMemberSnapshot(playerUuid, "Unknown", ClanRole.MEMBER, Instant.EPOCH));
+    }
+
+    private ClanSnapshot withUpdatedAt(ClanSnapshot snapshot, Instant updatedAt) {
+        return new ClanSnapshot(
+                snapshot.id(),
+                snapshot.name(),
+                snapshot.normalizedName(),
+                snapshot.tag(),
+                snapshot.tagColor(),
+                snapshot.description(),
+                snapshot.presidentUuid(),
+                snapshot.presidentName(),
+                snapshot.memberCount(),
+                snapshot.members(),
+                snapshot.banner(),
+                snapshot.createdAt(),
+                updatedAt
+        );
     }
 
     private CompletableFuture<Void> publishEvent(Event event) {

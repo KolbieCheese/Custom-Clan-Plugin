@@ -17,6 +17,7 @@ import io.github.maste.customclans.repositories.sqlite.SQLiteClanMemberRepositor
 import io.github.maste.customclans.repositories.sqlite.SQLiteClanRepository;
 import io.github.maste.customclans.repositories.sqlite.SQLiteDatabase;
 import io.github.maste.customclans.services.ChatService;
+import io.github.maste.customclans.services.ClanService;
 import io.github.maste.customclans.services.InviteService;
 import io.github.maste.customclans.services.api.LightweightClansApiImpl;
 import io.github.maste.customclans.util.ActionResult;
@@ -41,6 +42,7 @@ class LightweightClansApiImplIntegrationTest {
     private SQLiteDatabaseHolder holder;
     private LightweightClansApiImpl api;
     private ChatService chatService;
+    private ClanService clanService;
     private InviteService inviteService;
 
     @BeforeEach
@@ -52,6 +54,13 @@ class LightweightClansApiImplIntegrationTest {
                 holder.memberRepository,
                 new NoopClanChatRelay(),
                 MiniMessage.miniMessage()
+        );
+        clanService = new ClanService(
+                holder.plugin,
+                holder.pluginConfig,
+                holder.clanRepository,
+                holder.memberRepository,
+                chatService
         );
         inviteService = new InviteService(
                 holder.plugin,
@@ -159,6 +168,117 @@ class LightweightClansApiImplIntegrationTest {
         assertEquals(1, reread.banner().patterns().size());
     }
 
+    @Test
+    void asyncApiMethodsMirrorSyncLookupsAcrossAllExportPaths() {
+        Player president = mockPlayer("Alice");
+        Player member = mockOnlinePlayer("Bob");
+
+        ActionResult<Clan> created = clanService.createClan(president, "Crimson Knights").join();
+        assertTrue(created.success());
+        long clanId = created.value().id();
+
+        holder.clanRepository.updateClanBanner(
+                clanId,
+                "RED_BANNER",
+                "[{\"pattern\":\"BORDER\",\"color\":\"BLACK\"}]"
+        ).join();
+        assertTrue(inviteService.sendInvite(president, member).join().success());
+        assertTrue(inviteService.acceptInvite(member, "Crimson Knights").join().success());
+
+        ClanSnapshot syncById = api.getClanById(clanId).orElseThrow();
+
+        assertEquals(syncById, api.getClanByIdAsync(clanId).join().orElseThrow());
+        assertEquals(syncById, api.getClanByNameAsync("cRiMsOn kNiGhTs").join().orElseThrow());
+        assertEquals(syncById, api.getClanByNormalizedNameAsync(syncById.normalizedName()).join().orElseThrow());
+        assertEquals(List.of(syncById), api.getAllClansAsync().join());
+        assertEquals(syncById.members(), api.getMembersForClanAsync(clanId).join());
+        assertEquals(syncById.banner(), api.getBannerForClanAsync(clanId).join().orElseThrow());
+        assertEquals(syncById, api.getClanForPlayerAsync(member.getUniqueId()).join().orElseThrow());
+        assertNotNull(syncById.createdAt());
+        assertNotNull(syncById.updatedAt());
+    }
+
+    @Test
+    void updatedAtAdvancesForMutableClanStateButIgnoresInviteAndMembershipLifecycle() {
+        Player alice = mockPlayer("Alice");
+        Player bob = mockOnlinePlayer("Bob");
+        Player charlie = mockOnlinePlayer("Charlie");
+        Player dave = mockOnlinePlayer("Dave");
+
+        ActionResult<Clan> created = clanService.createClan(alice, "Crimson Knights").join();
+        assertTrue(created.success());
+        long clanId = created.value().id();
+
+        ClanSnapshot afterCreate = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterCreate.createdAt(), afterCreate.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(inviteService.sendInvite(alice, bob).join().success());
+        ClanSnapshot afterInvite = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterCreate.updatedAt(), afterInvite.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(inviteService.acceptInvite(bob, "Crimson Knights").join().success());
+        ClanSnapshot afterAccept = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterInvite.updatedAt(), afterAccept.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(clanService.updateDescription(alice, "We keep the realm safe.").join().success());
+        ClanSnapshot afterDescription = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterDescription.updatedAt().isAfter(afterAccept.updatedAt()));
+
+        waitForTimestampTick();
+        assertTrue(clanService.renameClan(alice, "Azure Guard").join().success());
+        ClanSnapshot afterRename = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterRename.updatedAt().isAfter(afterDescription.updatedAt()));
+
+        waitForTimestampTick();
+        assertTrue(clanService.updateTag(alice, "AG").join().success());
+        ClanSnapshot afterTag = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterTag.updatedAt().isAfter(afterRename.updatedAt()));
+
+        waitForTimestampTick();
+        assertTrue(clanService.updateColor(alice, "red").join().success());
+        ClanSnapshot afterColor = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterColor.updatedAt().isAfter(afterTag.updatedAt()));
+
+        waitForTimestampTick();
+        holder.clanRepository.updateClanBanner(clanId, "RED_BANNER", "[]").join();
+        ClanSnapshot afterBanner = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterBanner.updatedAt().isAfter(afterColor.updatedAt()));
+
+        waitForTimestampTick();
+        assertTrue(clanService.transferLeadership(alice, "Bob").join().success());
+        ClanSnapshot afterTransfer = api.getClanById(clanId).orElseThrow();
+        assertTrue(afterTransfer.updatedAt().isAfter(afterBanner.updatedAt()));
+
+        waitForTimestampTick();
+        assertTrue(inviteService.sendInvite(bob, charlie).join().success());
+        ClanSnapshot afterSecondInvite = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterTransfer.updatedAt(), afterSecondInvite.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(inviteService.acceptInvite(charlie, "Azure Guard").join().success());
+        ClanSnapshot afterSecondAccept = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterTransfer.updatedAt(), afterSecondAccept.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(clanService.leaveClan(charlie).join().success());
+        ClanSnapshot afterLeave = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterTransfer.updatedAt(), afterLeave.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(inviteService.sendInvite(bob, dave).join().success());
+        assertTrue(inviteService.acceptInvite(dave, "Azure Guard").join().success());
+        ClanSnapshot afterDaveJoin = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterTransfer.updatedAt(), afterDaveJoin.updatedAt());
+
+        waitForTimestampTick();
+        assertTrue(clanService.kickMember(bob, "Dave").join().success());
+        ClanSnapshot afterKick = api.getClanById(clanId).orElseThrow();
+        assertEquals(afterTransfer.updatedAt(), afterKick.updatedAt());
+    }
+
     private Player mockPlayer(String name) {
         Player player = mock(Player.class);
         when(player.getUniqueId()).thenReturn(UUID.nameUUIDFromBytes(name.getBytes(StandardCharsets.UTF_8)));
@@ -170,6 +290,15 @@ class LightweightClansApiImplIntegrationTest {
         Player player = mockPlayer(name);
         when(player.isOnline()).thenReturn(true);
         return player;
+    }
+
+    private void waitForTimestampTick() {
+        try {
+            Thread.sleep(25L);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for timestamp tick", interruptedException);
+        }
     }
 
     private static final class SQLiteDatabaseHolder {

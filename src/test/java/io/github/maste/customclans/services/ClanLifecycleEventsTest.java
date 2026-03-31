@@ -33,7 +33,11 @@ import io.github.maste.customclans.services.api.LightweightClansApiImpl;
 import io.github.maste.customclans.util.ActionResult;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -56,11 +60,9 @@ import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class ClanLifecycleEventsTest {
 
-    @TempDir
     Path tempDir;
 
     private SQLiteDatabaseHolder holder;
@@ -69,6 +71,9 @@ class ClanLifecycleEventsTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        Path testRoot = Path.of("build", "tmp", "test-workspaces");
+        Files.createDirectories(testRoot);
+        tempDir = Files.createTempDirectory(testRoot, "clan-lifecycle-");
         holder = new SQLiteDatabaseHolder(tempDir);
         installBukkitServer(holder.server);
 
@@ -100,7 +105,10 @@ class ClanLifecycleEventsTest {
     @AfterEach
     void tearDown() throws Exception {
         installBukkitServer(null);
-        holder.close();
+        if (holder != null) {
+            holder.close();
+        }
+        deleteRecursivelyWithRetry(tempDir);
     }
 
     @Test
@@ -208,6 +216,25 @@ class ClanLifecycleEventsTest {
         assertInstanceOf(ClanCreatedEvent.class, holder.capturedEvents.getFirst());
     }
 
+    @Test
+    void deletedEventCarriesFinalUpdatedAtTouchedDuringDisband() {
+        Player alice = mockOnlinePlayer("Alice");
+        Player bob = mockOnlinePlayer("Bob");
+
+        clanService.createClan(alice, "Crimson Knights").join();
+        inviteService.sendInvite(alice, bob).join();
+        inviteService.acceptInvite(bob, "Crimson Knights").join();
+        clanService.transferLeadership(alice, "Bob").join();
+
+        ClanSnapshot beforeDisband = holder.verificationApi.getClanForPlayer(bob.getUniqueId()).orElseThrow();
+        waitForTimestampTick();
+
+        clanService.disbandClan(bob).join();
+
+        ClanDeletedEvent deletedEvent = firstEvent(ClanDeletedEvent.class);
+        assertTrue(deletedEvent.getDeletedClan().updatedAt().isAfter(beforeDisband.updatedAt()));
+    }
+
     private <T extends Event> T firstEvent(Class<T> type) {
         return holder.capturedEvents.stream().filter(type::isInstance).map(type::cast).findFirst().orElseThrow();
     }
@@ -231,6 +258,50 @@ class ClanLifecycleEventsTest {
         when(inventory.getItemInMainHand()).thenReturn(bannerStack);
         when(president.getInventory()).thenReturn(inventory);
         return president;
+    }
+
+    private void waitForTimestampTick() {
+        try {
+            Thread.sleep(25L);
+        } catch (InterruptedException interruptedException) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for timestamp tick", interruptedException);
+        }
+    }
+
+    private void deleteRecursivelyWithRetry(Path root) throws Exception {
+        if (root == null || !Files.exists(root)) {
+            return;
+        }
+
+        IOException lastFailure = null;
+        for (int attempt = 0; attempt < 20; attempt++) {
+            try {
+                deleteRecursively(root);
+                return;
+            } catch (IOException ioException) {
+                lastFailure = ioException;
+                Thread.sleep(50L);
+            }
+        }
+
+        throw lastFailure;
+    }
+
+    private void deleteRecursively(Path root) throws IOException {
+        try (var stream = Files.walk(root)) {
+            try {
+                stream.sorted(Comparator.reverseOrder()).forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (IOException ioException) {
+                        throw new UncheckedIOException(ioException);
+                    }
+                });
+            } catch (UncheckedIOException uncheckedIOException) {
+                throw uncheckedIOException.getCause();
+            }
+        }
     }
 
     private static void installBukkitServer(Server server) throws Exception {

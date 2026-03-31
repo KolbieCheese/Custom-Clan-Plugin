@@ -365,12 +365,12 @@ public final class SQLiteClanRepository implements ClanRepository {
     }
 
     @Override
-    public CompletableFuture<Void> disbandClan(long clanId) {
+    public CompletableFuture<Void> disbandClan(long clanId, Instant deletedAt) {
         return database.transactionAsync(connection -> {
             try (PreparedStatement touchStatement = connection.prepareStatement(
                     "UPDATE clans SET updated_at = ? WHERE id = ?"
             )) {
-                touchStatement.setLong(1, Instant.now().toEpochMilli());
+                touchStatement.setLong(1, deletedAt.toEpochMilli());
                 touchStatement.setLong(2, clanId);
                 touchStatement.executeUpdate();
             }

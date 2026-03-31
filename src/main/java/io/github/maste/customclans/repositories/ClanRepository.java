@@ -59,5 +59,5 @@ public interface ClanRepository {
 
     CompletableFuture<Boolean> transferLeadership(long clanId, UUID currentPresidentUuid, UUID newPresidentUuid);
 
-    CompletableFuture<Void> disbandClan(long clanId);
+    CompletableFuture<Void> disbandClan(long clanId, Instant deletedAt);
 }
