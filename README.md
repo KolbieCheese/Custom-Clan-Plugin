@@ -69,6 +69,7 @@ Lightweight Clans is a lightweight, command-only Minecraft clans plugin for Pape
 - Clan names are unique regardless of capitalization.
 - Clan name lookups are case-insensitive.
 - The original display name is preserved for output and chat tags.
+- The default config allows clan names up to 30 characters while clan tags remain capped at 4 characters.
 - Invites are accepted or denied by clan name with `/clan accept <clan name>` and `/clan deny <clan name>`.
 - Duplicate active invites from the same clan to the same player are rejected.
 - Invited players must be online for this MVP.

@@ -90,7 +90,7 @@ public final class PluginConfig {
 
     public static PluginConfig load(JavaPlugin plugin) {
         FileConfiguration config = plugin.getConfig();
-        int maxClanNameLength = Math.max(3, config.getInt("max-clan-name-length", 24));
+        int maxClanNameLength = Math.max(3, config.getInt("max-clan-name-length", 30));
         int configuredTagLength = Math.max(2, config.getInt("max-clan-tag-length", 4));
         int maxClanTagLength = Math.min(4, configuredTagLength);
         int inviteExpirationSeconds = Math.max(30, config.getInt("invite-expiration-seconds", 300));

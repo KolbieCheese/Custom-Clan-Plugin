@@ -11,11 +11,11 @@ class ValidationUtilTest {
 
     @Test
     void validatesClanNamesAndTags() {
-        assertTrue(ValidationUtil.isValidClanName("Crimson Knights", 24));
+        assertTrue(ValidationUtil.isValidClanName("Thirty Char Clan Name ExampleX", 30));
         assertTrue(ValidationUtil.isValidClanTag("CK", 6));
 
-        assertFalse(ValidationUtil.isValidClanName("Crimson@Knights", 24));
-        assertFalse(ValidationUtil.isValidClanName("This Clan Name Is Way Too Long For MVP", 24));
+        assertFalse(ValidationUtil.isValidClanName("Crimson@Knights", 30));
+        assertFalse(ValidationUtil.isValidClanName("This Clan Name Is Definitely Too Long Now", 30));
         assertFalse(ValidationUtil.isValidClanTag("C-K", 6));
         assertFalse(ValidationUtil.isValidClanTag("TOOLONG", 4));
     }

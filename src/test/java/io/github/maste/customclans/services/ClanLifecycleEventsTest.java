@@ -369,7 +369,7 @@ class ClanLifecycleEventsTest {
             }).when(pluginManager).callEvent(any(Event.class));
 
             YamlConfiguration yaml = new YamlConfiguration();
-            yaml.set("max-clan-name-length", 24);
+            yaml.set("max-clan-name-length", 30);
             yaml.set("max-clan-tag-length", 6);
             yaml.set("default-clan-tag-color", "white");
             yaml.set("invite-expiration-seconds", 300);

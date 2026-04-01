@@ -319,7 +319,7 @@ class LightweightClansApiImplIntegrationTest {
             when(plugin.isEnabled()).thenReturn(true);
 
             org.bukkit.configuration.file.YamlConfiguration yaml = new org.bukkit.configuration.file.YamlConfiguration();
-            yaml.set("max-clan-name-length", 24);
+            yaml.set("max-clan-name-length", 30);
             yaml.set("max-clan-tag-length", 6);
             yaml.set("default-clan-tag-color", "white");
             yaml.set("invite-expiration-seconds", 300);

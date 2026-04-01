@@ -126,6 +126,18 @@ class ClanServiceTest {
     }
 
     @Test
+    void createClanAcceptsThirtyCharacterNameAndKeepsTagLengthCapped() {
+        Player player = mockPlayer("Alice");
+        String clanName = "Thirty Char Clan Name ExampleX";
+
+        ActionResult<Clan> result = clanService.createClan(player, clanName).join();
+
+        assertTrue(result.success());
+        assertEquals(clanName, result.value().name());
+        assertEquals("TCCN", result.value().tag());
+    }
+
+    @Test
     void nonPresidentCannotRenameClan() {
         Player president = mockPlayer("Alice");
         Player member = mockOnlinePlayer("Bob");
@@ -135,6 +147,19 @@ class ClanServiceTest {
 
         assertFalse(result.success());
         assertEquals("common.not-president", result.messageKey());
+    }
+
+    @Test
+    void presidentCanRenameClanToThirtyCharacterName() {
+        Player president = mockPlayer("Alice");
+        String newName = "Thirty Char Clan Name ExampleX";
+        clanService.createClan(president, "Crimson Knights").join();
+
+        ActionResult<Void> result = clanService.renameClan(president, newName).join();
+
+        assertTrue(result.success());
+        assertEquals("rename.success", result.messageKey());
+        assertEquals(newName, clanService.getClanInfo(newName).join().value().clan().name());
     }
 
     @Test
@@ -631,7 +656,7 @@ class ClanServiceTest {
 
         private PluginConfig create(JavaPlugin plugin) {
             org.bukkit.configuration.file.YamlConfiguration yaml = new org.bukkit.configuration.file.YamlConfiguration();
-            yaml.set("max-clan-name-length", 24);
+            yaml.set("max-clan-name-length", 30);
             yaml.set("max-clan-tag-length", 6);
             yaml.set("default-clan-tag-color", "white");
             yaml.set("invite-expiration-seconds", 300);
