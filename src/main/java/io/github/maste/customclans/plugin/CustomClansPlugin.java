@@ -86,9 +86,7 @@ public final class CustomClansPlugin extends JavaPlugin {
         registerPublicApi(clanRepository, clanMemberRepository);
 
         registerCommand();
-        registerListeners();
-        warmOnlinePlayerCaches();
-        scheduleInviteCleanup();
+        activateLiveRuntimeOnNextTick();
     }
 
     @Override
@@ -139,6 +137,17 @@ public final class CustomClansPlugin extends JavaPlugin {
         pluginManager.registerEvents(new PlayerSessionListener(this, clanService, chatService), this);
     }
 
+    private void activateLiveRuntimeOnNextTick() {
+        // Waiting one tick makes startup listener ordering match the successful post-start reload path.
+        getServer().getScheduler().runTask(this, this::activateLiveRuntime);
+    }
+
+    private void activateLiveRuntime() {
+        registerListeners();
+        warmOnlinePlayerCaches();
+        scheduleInviteCleanup();
+    }
+
     private void warmOnlinePlayerCaches() {
         getServer().getOnlinePlayers().forEach(player -> {
             clanService.touchPlayerName(player).exceptionally(throwable -> {
@@ -175,9 +184,7 @@ public final class CustomClansPlugin extends JavaPlugin {
         getServer().getScheduler().cancelTasks(this);
         HandlerList.unregisterAll(this);
         registerCommand();
-        registerListeners();
-        warmOnlinePlayerCaches();
-        scheduleInviteCleanup();
+        activateLiveRuntime();
     }
 
     private void initializeRuntimeServices(

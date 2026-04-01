@@ -10,6 +10,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,11 +23,13 @@ import io.github.maste.customclans.models.ClanRole;
 import io.github.maste.customclans.models.PlayerClanSnapshot;
 import io.github.maste.customclans.repositories.ClanMemberRepository;
 import io.github.maste.customclans.util.ActionResult;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -218,6 +221,117 @@ class ChatServiceTest {
         assertNull(rendered.children().get(3).style().color());
     }
 
+    @Test
+    void renderPublicChatWarmsMissingSnapshotForLaterMessages() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        ClanMemberRepository clanMemberRepository = mock(ClanMemberRepository.class);
+        ChatService chatService = new ChatService(
+                plugin,
+                createPluginConfig(true, true),
+                clanMemberRepository,
+                new NoopClanChatRelay(),
+                MiniMessage.miniMessage()
+        );
+
+        Player player = mockPlayer("Alice");
+        UUID playerUuid = player.getUniqueId();
+        PlayerClanSnapshot snapshot = new PlayerClanSnapshot(
+                1L,
+                "Crimson Knights",
+                "CK",
+                "#FFAA00",
+                ClanRole.PRESIDENT,
+                playerUuid
+        );
+        when(clanMemberRepository.findSnapshotByPlayerUuid(playerUuid))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(snapshot)));
+
+        Component displayName = Component.text("Alicia");
+        Component firstRender = chatService.renderPublicChat(player, displayName, Component.text("hello"));
+        Component secondRender = chatService.renderPublicChat(player, displayName, Component.text("again"));
+
+        assertEquals("Alicia: hello", PlainTextComponentSerializer.plainText().serialize(firstRender));
+        assertEquals("[CK] Alicia: again", PlainTextComponentSerializer.plainText().serialize(secondRender));
+        verify(clanMemberRepository).findSnapshotByPlayerUuid(playerUuid);
+    }
+
+    @Test
+    void refreshSnapshotBypassesCachedClanData() {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        ClanMemberRepository clanMemberRepository = mock(ClanMemberRepository.class);
+        ChatService chatService = new ChatService(
+                plugin,
+                createPluginConfig(true, true),
+                clanMemberRepository,
+                new NoopClanChatRelay(),
+                MiniMessage.miniMessage()
+        );
+
+        Player player = mockPlayer("Alice");
+        UUID playerUuid = player.getUniqueId();
+        PlayerClanSnapshot initialSnapshot = new PlayerClanSnapshot(
+                1L,
+                "Crimson Knights",
+                "CK",
+                "#FFAA00",
+                ClanRole.PRESIDENT,
+                playerUuid
+        );
+        PlayerClanSnapshot updatedSnapshot = new PlayerClanSnapshot(
+                1L,
+                "Crimson Knights",
+                "NEW",
+                "#FFAA00",
+                ClanRole.PRESIDENT,
+                playerUuid
+        );
+        when(clanMemberRepository.findSnapshotByPlayerUuid(playerUuid))
+                .thenReturn(
+                        CompletableFuture.completedFuture(Optional.of(initialSnapshot)),
+                        CompletableFuture.completedFuture(Optional.of(updatedSnapshot))
+                );
+
+        chatService.refreshSnapshot(playerUuid).join();
+        chatService.refreshSnapshot(playerUuid).join();
+
+        Component rendered = chatService.renderPublicChat(player, Component.text("Alicia"), Component.text("hello"));
+
+        assertEquals("[NEW] Alicia: hello", PlainTextComponentSerializer.plainText().serialize(rendered));
+        verify(clanMemberRepository, times(2)).findSnapshotByPlayerUuid(playerUuid);
+    }
+
+    @Test
+    void shouldRouteToClanChatWarmsMissingSnapshotWithoutDroppingToggle() throws Exception {
+        JavaPlugin plugin = mock(JavaPlugin.class);
+        ClanMemberRepository clanMemberRepository = mock(ClanMemberRepository.class);
+        ChatService chatService = new ChatService(
+                plugin,
+                createPluginConfig(true, true),
+                clanMemberRepository,
+                new NoopClanChatRelay(),
+                MiniMessage.miniMessage()
+        );
+
+        Player player = mockPlayer("Alice");
+        UUID playerUuid = player.getUniqueId();
+        PlayerClanSnapshot snapshot = new PlayerClanSnapshot(
+                1L,
+                "Crimson Knights",
+                "CK",
+                "#FFAA00",
+                ClanRole.PRESIDENT,
+                playerUuid
+        );
+        when(clanMemberRepository.findSnapshotByPlayerUuid(playerUuid))
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(snapshot)));
+
+        clanChatToggles(chatService).add(playerUuid);
+
+        assertFalse(chatService.shouldRouteToClanChat(player));
+        assertTrue(chatService.shouldRouteToClanChat(player));
+        verify(clanMemberRepository).findSnapshotByPlayerUuid(playerUuid);
+    }
+
     private ChatServiceHarness createHarness(boolean primaryThread) {
         return createHarness(primaryThread, false);
     }
@@ -300,6 +414,13 @@ class ChatServiceTest {
         when(player.isOnline()).thenReturn(true);
         when(player.displayName()).thenReturn(Component.text(name));
         return player;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Set<UUID> clanChatToggles(ChatService chatService) throws Exception {
+        Field field = ChatService.class.getDeclaredField("clanChatToggles");
+        field.setAccessible(true);
+        return (Set<UUID>) field.get(chatService);
     }
 
     private final class ChatServiceHarness {

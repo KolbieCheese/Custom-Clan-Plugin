@@ -37,6 +37,7 @@ public final class ChatService {
     private final ClanChatRelay clanChatRelay;
     private final MiniMessage miniMessage;
     private final ConcurrentMap<UUID, PlayerClanSnapshot> snapshots;
+    private final ConcurrentMap<UUID, CompletableFuture<Optional<PlayerClanSnapshot>>> snapshotRefreshes;
     private final Set<UUID> clanChatToggles;
 
     public ChatService(
@@ -52,6 +53,7 @@ public final class ChatService {
         this.clanChatRelay = clanChatRelay;
         this.miniMessage = miniMessage;
         this.snapshots = new ConcurrentHashMap<>();
+        this.snapshotRefreshes = new ConcurrentHashMap<>();
         this.clanChatToggles = ConcurrentHashMap.newKeySet();
     }
 
@@ -64,18 +66,11 @@ public final class ChatService {
         if (cachedSnapshot != null) {
             return CompletableFuture.completedFuture(Optional.of(cachedSnapshot));
         }
-        return refreshSnapshot(playerUuid);
+        return requestSnapshotRefresh(playerUuid, true, false);
     }
 
     public CompletableFuture<Optional<PlayerClanSnapshot>> refreshSnapshot(UUID playerUuid) {
-        return clanMemberRepository.findSnapshotByPlayerUuid(playerUuid).thenApply(optionalSnapshot -> {
-            if (optionalSnapshot.isPresent()) {
-                snapshots.put(playerUuid, optionalSnapshot.get());
-            } else {
-                clearPlayerState(playerUuid);
-            }
-            return optionalSnapshot;
-        });
+        return requestSnapshotRefresh(playerUuid, false, true);
     }
 
     public CompletableFuture<Void> refreshSnapshots(Collection<UUID> playerUuids) {
@@ -169,7 +164,7 @@ public final class ChatService {
             return false;
         }
         if (!snapshots.containsKey(playerUuid)) {
-            clanChatToggles.remove(playerUuid);
+            requestSnapshotRefresh(playerUuid, true, false);
             return false;
         }
         return true;
@@ -188,6 +183,9 @@ public final class ChatService {
                     player.getName()
             );
         }
+        if (snapshot == null) {
+            requestSnapshotRefresh(player.getUniqueId(), true, false);
+        }
         return MiniMessageUtil.renderChatLine(
                 miniMessage,
                 pluginConfig.publicChatFormat(),
@@ -199,6 +197,7 @@ public final class ChatService {
 
     public void clearPlayerState(UUID playerUuid) {
         snapshots.remove(playerUuid);
+        snapshotRefreshes.remove(playerUuid);
         clanChatToggles.remove(playerUuid);
     }
 
@@ -222,6 +221,44 @@ public final class ChatService {
 
     private String plainMessage(Component message) {
         return PLAIN_TEXT_SERIALIZER.serialize(message).trim();
+    }
+
+    private CompletableFuture<Optional<PlayerClanSnapshot>> requestSnapshotRefresh(
+            UUID playerUuid,
+            boolean allowCachedValue,
+            boolean forceRefresh
+    ) {
+        PlayerClanSnapshot cachedSnapshot = snapshots.get(playerUuid);
+        if (allowCachedValue && cachedSnapshot != null) {
+            return CompletableFuture.completedFuture(Optional.of(cachedSnapshot));
+        }
+
+        CompletableFuture<Optional<PlayerClanSnapshot>> existingRefresh = snapshotRefreshes.get(playerUuid);
+        if (!forceRefresh && existingRefresh != null) {
+            return existingRefresh;
+        }
+
+        CompletableFuture<Optional<PlayerClanSnapshot>> refreshFuture = clanMemberRepository.findSnapshotByPlayerUuid(playerUuid)
+                .thenApply(optionalSnapshot -> {
+                    if (optionalSnapshot.isPresent()) {
+                        snapshots.put(playerUuid, optionalSnapshot.get());
+                    } else {
+                        clearPlayerState(playerUuid);
+                    }
+                    return optionalSnapshot;
+                });
+
+        if (forceRefresh) {
+            snapshotRefreshes.put(playerUuid, refreshFuture);
+        } else {
+            CompletableFuture<Optional<PlayerClanSnapshot>> inFlightRefresh = snapshotRefreshes.putIfAbsent(playerUuid, refreshFuture);
+            if (inFlightRefresh != null) {
+                return inFlightRefresh;
+            }
+        }
+
+        refreshFuture.whenComplete((unused, throwable) -> snapshotRefreshes.remove(playerUuid, refreshFuture));
+        return refreshFuture;
     }
 
     private CompletableFuture<ActionResult<Void>> dispatchClanMessage(
